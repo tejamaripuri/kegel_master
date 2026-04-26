@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:kegel_master/router/app_router.dart';
 
 import 'package:kegel_master/app.dart';
 
@@ -43,6 +45,43 @@ void main() {
       await tester.tap(find.byIcon(Icons.menu_book_outlined));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.home_outlined));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Start or resume your session — coming soon.'), findsOneWidget);
+    });
+
+    testWidgets('router.go shows Learn tab without tapping NavigationBar', (WidgetTester tester) async {
+      final GoRouter router = createAppRouter();
+      await tester.pumpWidget(KegelMasterApp(router: router));
+
+      expect(find.text('Start or resume your session — coming soon.'), findsOneWidget);
+
+      router.go('/learn');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Guides and techniques — coming soon.'), findsOneWidget);
+    });
+
+    testWidgets('router.go to / redirects to Home content', (WidgetTester tester) async {
+      final GoRouter router = createAppRouter();
+      await tester.pumpWidget(KegelMasterApp(router: router));
+
+      router.go('/');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Start or resume your session — coming soon.'), findsOneWidget);
+    });
+
+    testWidgets('unknown location shows not found and Go home navigates to Home', (WidgetTester tester) async {
+      final GoRouter router = createAppRouter();
+      await tester.pumpWidget(KegelMasterApp(router: router));
+
+      router.go('/this-route-does-not-exist');
+      await tester.pumpAndSettle();
+
+      expect(find.text('No route for this location.'), findsOneWidget);
+
+      await tester.tap(find.text('Go home'));
       await tester.pumpAndSettle();
 
       expect(find.text('Start or resume your session — coming soon.'), findsOneWidget);
