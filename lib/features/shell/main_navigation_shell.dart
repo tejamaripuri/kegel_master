@@ -1,39 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-import 'package:kegel_master/features/home/presentation/home_screen.dart';
-import 'package:kegel_master/features/learn/presentation/learn_screen.dart';
-import 'package:kegel_master/features/progress/presentation/progress_screen.dart';
-import 'package:kegel_master/features/settings/presentation/settings_screen.dart';
+class MainNavigationShell extends StatelessWidget {
+  const MainNavigationShell({super.key, required this.shell});
 
-class MainNavigationShell extends StatefulWidget {
-  const MainNavigationShell({super.key});
-
-  @override
-  State<MainNavigationShell> createState() => _MainNavigationShellState();
-}
-
-class _MainNavigationShellState extends State<MainNavigationShell> {
-  int _selectedIndex = 0;
-
-  static const _pages = <Widget>[
-    HomeScreen(),
-    LearnScreen(),
-    ProgressScreen(),
-    SettingsScreen(),
-  ];
+  final StatefulNavigationShell shell;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _pages,
-      ),
+      body: shell,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() => _selectedIndex = index);
-        },
+        selectedIndex: shell.currentIndex,
+        onDestinationSelected: shell.goBranch,
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
