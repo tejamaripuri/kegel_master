@@ -4,24 +4,29 @@ This document describes how **Kegel Master** is structured today: entry points, 
 
 ## Overview
 
-The app boots in `main()`, constructs `KegelMasterApp`, and uses `MaterialApp` with `MainNavigationShell` as the root `home` widget.
+The app boots in `main()`, constructs `KegelMasterApp`, and uses **`MaterialApp.router`** with a **`GoRouter`** defined in [`lib/router/app_router.dart`](../lib/router/app_router.dart). The bottom tab chrome lives in **`MainNavigationShell`**, which hosts the active branch via **`StatefulNavigationShell`**.
 
 | Layer | Responsibility |
 |--------|----------------|
 | `lib/main.dart` | `runApp(const KegelMasterApp())` |
-| `lib/app.dart` | `MaterialApp`, title, theme, `home: MainNavigationShell` |
-| `lib/features/shell/` | Bottom navigation and tab body hosting |
+| `lib/app.dart` | `MaterialApp.router`, title, theme, `routerConfig` |
+| `lib/router/` | `GoRouter`: tab paths, `/` → `/home` redirect, `errorBuilder` |
+| `lib/features/shell/` | Bottom navigation and shell scaffold around branch content |
 
 ## Navigation
 
-[`lib/features/shell/main_navigation_shell.dart`](../lib/features/shell/main_navigation_shell.dart) implements a **four-tab** shell:
+[`lib/router/app_router.dart`](../lib/router/app_router.dart) defines a single **`GoRouter`** with **`initialLocation: /home`**, a top-level **`redirect`** that sends **`/`** to **`/home`**, and an **`errorBuilder`** for unknown paths (minimal “not found” UI and a control that calls **`context.go('/home')`**).
 
-1. **Home** — `HomeScreen`
-2. **Learn** — `LearnScreen`
-3. **Progress** — `ProgressScreen`
-4. **Settings** — `SettingsScreen`
+[`lib/features/shell/main_navigation_shell.dart`](../lib/features/shell/main_navigation_shell.dart) hosts a Material 3 **`NavigationBar`** and a **`StatefulShellRoute.indexedStack`** branch body via **`StatefulNavigationShell`**. Tab changes call **`shell.goBranch(index)`** so the selected tab stays aligned with the active route (ready for web URL bar and deep links later). Indexed-stack semantics (off-tab routes stay mounted) are provided by **`StatefulShellRoute.indexedStack`**, not a hand-rolled **`IndexedStack`**.
 
-The body is an **`IndexedStack`** keyed by the selected tab index, with a Material 3 **`NavigationBar`**. Each child page stays in the tree when not visible, so **widget state is preserved** when switching tabs (unlike replacing the route with a new page each time).
+| Path | Tab index | Screen |
+|------|-----------|--------|
+| `/home` | 0 | `HomeScreen` |
+| `/learn` | 1 | `LearnScreen` |
+| `/progress` | 2 | `ProgressScreen` |
+| `/settings` | 3 | `SettingsScreen` |
+
+**State restoration:** OS-level restoration is optional for the first milestone; if it becomes a requirement, add a documented **`restorationScopeId`** on the router or shell per `go_router` / Flutter docs for the SDK version in use.
 
 ## Feature map
 
@@ -47,7 +52,7 @@ Screens live under `lib/features/<feature>/presentation/`. Current roles (mostly
 flowchart TD
   mainNode["main()"]
   appNode["KegelMasterApp"]
-  materialNode["MaterialApp"]
+  routerNode["GoRouter"]
   shellNode["MainNavigationShell"]
   homeNode["HomeScreen"]
   learnNode["LearnScreen"]
@@ -55,8 +60,8 @@ flowchart TD
   settingsNode["SettingsScreen"]
 
   mainNode --> appNode
-  appNode --> materialNode
-  materialNode --> shellNode
+  appNode --> routerNode
+  routerNode --> shellNode
   shellNode --> homeNode
   shellNode --> learnNode
   shellNode --> progressNode
