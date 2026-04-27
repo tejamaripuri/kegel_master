@@ -73,11 +73,46 @@ void main() {
     await tester.tap(find.text('End session'));
     await tester.pumpAndSettle();
 
-    expect(find.text('End session early?'), findsOneWidget);
-    await tester.tap(find.text('End'));
+    final Finder dialog = find.byType(AlertDialog);
+    expect(dialog, findsOneWidget);
+    expect(
+      find.descendant(of: dialog, matching: find.text('End session early?')),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.descendant(
+        of: dialog,
+        matching: find.widgetWithText(FilledButton, 'End'),
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Open session'), findsOneWidget);
+  });
+
+  testWidgets('End session dialog Cancel dismisses without popping route', (WidgetTester tester) async {
+    await tester.pumpWidget(_wrapWithPushRoute(testConfig));
+
+    await tester.tap(find.text('Open session'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('End session'));
+    await tester.pumpAndSettle();
+
+    final Finder dialog = find.byType(AlertDialog);
+    expect(dialog, findsOneWidget);
+    await tester.tap(
+      find.descendant(
+        of: dialog,
+        matching: find.widgetWithText(TextButton, 'Cancel'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.text('Open session'), findsNothing);
+    expect(find.text('Session'), findsOneWidget);
+    expect(find.text('End session'), findsOneWidget);
   });
 
   testWidgets('Done state renders and close action pops', (WidgetTester tester) async {
