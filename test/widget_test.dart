@@ -11,7 +11,8 @@ void main() {
       await tester.pumpWidget(const KegelMasterApp());
 
       expect(find.byType(NavigationBar), findsOneWidget);
-      expect(find.text('Start or resume your session — coming soon.'), findsOneWidget);
+      expect(find.text('Start a guided session when you are ready.'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Start session'), findsOneWidget);
     });
 
     testWidgets('Learn tab shows learn screen body', (WidgetTester tester) async {
@@ -47,14 +48,27 @@ void main() {
       await tester.tap(find.byIcon(Icons.home_outlined));
       await tester.pumpAndSettle();
 
-      expect(find.text('Start or resume your session — coming soon.'), findsOneWidget);
+      expect(find.text('Start a guided session when you are ready.'), findsOneWidget);
+    });
+
+    testWidgets('Start session pushes full-screen session without NavigationBar', (WidgetTester tester) async {
+      await tester.pumpWidget(const KegelMasterApp());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NavigationBar), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Start session'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(NavigationBar), findsNothing);
+      expect(find.text('Session'), findsWidgets);
     });
 
     testWidgets('router.go shows Learn tab without tapping NavigationBar', (WidgetTester tester) async {
       final GoRouter router = createAppRouter();
       await tester.pumpWidget(KegelMasterApp(router: router));
 
-      expect(find.text('Start or resume your session — coming soon.'), findsOneWidget);
+      expect(find.text('Start a guided session when you are ready.'), findsOneWidget);
 
       router.go('/learn');
       await tester.pumpAndSettle();
@@ -69,7 +83,7 @@ void main() {
       router.go('/');
       await tester.pumpAndSettle();
 
-      expect(find.text('Start or resume your session — coming soon.'), findsOneWidget);
+      expect(find.text('Start a guided session when you are ready.'), findsOneWidget);
     });
 
     testWidgets('unknown location shows not found and Go home navigates to Home', (WidgetTester tester) async {
@@ -84,7 +98,7 @@ void main() {
       await tester.tap(find.text('Go home'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Start or resume your session — coming soon.'), findsOneWidget);
+      expect(find.text('Start a guided session when you are ready.'), findsOneWidget);
     });
   });
 }

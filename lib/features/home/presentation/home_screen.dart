@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -7,8 +8,24 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Home')),
-      body: const Center(
-        child: Text('Start or resume your session — coming soon.'),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                'Start a guided session when you are ready.',
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: () => context.push('/session'),
+              child: const Text('Start session'),
+            ),
+          ],
+        ),
       ),
     );
   }
