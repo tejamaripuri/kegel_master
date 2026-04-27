@@ -23,13 +23,36 @@ class _SessionScreenState extends State<SessionScreen> {
   void initState() {
     super.initState();
     _engine = SessionEngine(config: _config);
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _onTick());
+    _startPeriodicTimer();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _cancelPeriodicTimer();
     super.dispose();
+  }
+
+  void _cancelPeriodicTimer() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  void _startPeriodicTimer() {
+    _cancelPeriodicTimer();
+    final SessionPhase phase = _engine.state.phase;
+    if (phase == SessionPhase.done || phase == SessionPhase.abandoned) {
+      return;
+    }
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _onTick());
+  }
+
+  void _maybeRestartTimerIfActive() {
+    if (!mounted) return;
+    final SessionPhase phase = _engine.state.phase;
+    if (phase == SessionPhase.done || phase == SessionPhase.abandoned) {
+      return;
+    }
+    _startPeriodicTimer();
   }
 
   void _onTick() {
@@ -43,8 +66,7 @@ class _SessionScreenState extends State<SessionScreen> {
     });
     final SessionPhase after = _engine.state.phase;
     if (after == SessionPhase.done || after == SessionPhase.abandoned) {
-      _timer?.cancel();
-      _timer = null;
+      _cancelPeriodicTimer();
     }
   }
 
@@ -57,8 +79,7 @@ class _SessionScreenState extends State<SessionScreen> {
       _engine.skipPhase();
     });
     if (_engine.state.phase == SessionPhase.done || _engine.state.phase == SessionPhase.abandoned) {
-      _timer?.cancel();
-      _timer = null;
+      _cancelPeriodicTimer();
     }
   }
 
@@ -70,12 +91,14 @@ class _SessionScreenState extends State<SessionScreen> {
     }
   }
 
-  Future<void> _onEndSessionPressed() async {
+  Future<void> _requestEndSessionConfirm() async {
     final SessionPhase phase = _engine.state.phase;
     if (phase == SessionPhase.done || phase == SessionPhase.abandoned) {
       _popWhenAllowed();
       return;
     }
+
+    _cancelPeriodicTimer();
 
     final bool? confirmed = await showDialog<bool>(
       context: context,
@@ -97,16 +120,22 @@ class _SessionScreenState extends State<SessionScreen> {
       },
     );
 
-    if (confirmed != true || !mounted) return;
+    if (!mounted) return;
+
+    if (confirmed != true) {
+      _maybeRestartTimerIfActive();
+      return;
+    }
 
     setState(() {
       _engine.endEarly();
     });
-    _timer?.cancel();
-    _timer = null;
+    _cancelPeriodicTimer();
 
     _popWhenAllowed();
   }
+
+  Future<void> _onEndSessionPressed() => _requestEndSessionConfirm();
 
   static String _phaseLabel(SessionPhase phase) {
     switch (phase) {
@@ -126,13 +155,22 @@ class _SessionScreenState extends State<SessionScreen> {
   @override
   Widget build(BuildContext context) {
     final SessionState s = _engine.state;
+    final bool allowSystemPop =
+        s.phase == SessionPhase.done || s.phase == SessionPhase.abandoned;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Session')),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: _buildBody(context, s),
+    return PopScope(
+      canPop: allowSystemPop,
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (didPop) return;
+        unawaited(_requestEndSessionConfirm());
+      },
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Session')),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: _buildBody(context, s),
+          ),
         ),
       ),
     );

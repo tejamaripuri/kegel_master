@@ -115,6 +115,68 @@ void main() {
     expect(find.text('End session'), findsOneWidget);
   });
 
+  testWidgets('system back during active session opens end confirmation instead of popping', (WidgetTester tester) async {
+    await tester.pumpWidget(_wrapWithPushRoute(testConfig));
+
+    await tester.tap(find.text('Open session'));
+    await tester.pumpAndSettle();
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.text('Open session'), findsNothing);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.widgetWithText(TextButton, 'Cancel'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(find.text('Session'), findsOneWidget);
+  });
+
+  testWidgets('timer does not advance while end dialog is shown; cancel resumes ticking', (WidgetTester tester) async {
+    final SessionConfig longSqueeze = SessionConfig(
+      squeezeSeconds: 20,
+      relaxSeconds: 5,
+      bufferBetweenSetsSeconds: 0,
+      repsPerSet: 2,
+      targetSets: 2,
+    );
+
+    await tester.pumpWidget(_wrapWithPushRoute(longSqueeze));
+
+    await tester.tap(find.text('Open session'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('20s'), findsOneWidget);
+
+    await tester.tap(find.text('End session'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsOneWidget);
+    await tester.pump(const Duration(seconds: 8));
+    expect(find.text('20s'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.widgetWithText(TextButton, 'Cancel'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AlertDialog), findsNothing);
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('19s'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('18s'), findsOneWidget);
+  });
+
   testWidgets('Done state renders and close action pops', (WidgetTester tester) async {
     final SessionConfig quickDoneConfig = SessionConfig(
       squeezeSeconds: 1,

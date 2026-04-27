@@ -64,6 +64,25 @@ void main() {
       expect(find.text('Session'), findsOneWidget);
     });
 
+    testWidgets('system back on active session shows end confirmation', (WidgetTester tester) async {
+      final GoRouter router = createAppRouter();
+      await tester.pumpWidget(KegelMasterApp(router: router));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Start session'));
+      await tester.pumpAndSettle();
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      final Finder dialog = find.byType(AlertDialog);
+      expect(dialog, findsOneWidget);
+      expect(
+        find.descendant(of: dialog, matching: find.text('End session early?')),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('router.go shows Learn tab without tapping NavigationBar', (WidgetTester tester) async {
       final GoRouter router = createAppRouter();
       await tester.pumpWidget(KegelMasterApp(router: router));
