@@ -61,7 +61,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(NavigationBar), findsNothing);
-      expect(find.text('Session'), findsWidgets);
+      expect(find.text('Session'), findsOneWidget);
     });
 
     testWidgets('router.go shows Learn tab without tapping NavigationBar', (WidgetTester tester) async {
