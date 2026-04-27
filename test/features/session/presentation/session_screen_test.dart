@@ -20,6 +20,9 @@ void main() {
     );
 
     expect(find.text('Squeeze'), findsOneWidget);
+    expect(find.text('5'), findsOneWidget);
+    expect(find.text('Set 1 of 2'), findsOneWidget);
+    expect(find.text('Rep 1 of 2'), findsOneWidget);
     expect(find.text('Skip'), findsOneWidget);
     expect(find.text('End session'), findsOneWidget);
   });
