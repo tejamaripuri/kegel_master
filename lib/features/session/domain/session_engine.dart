@@ -57,7 +57,7 @@ class SessionEngine {
   void skipPhase() => _advancePhase(markSkipped: true);
 
   void endEarly() {
-    if (_state.phase == SessionPhase.done) {
+    if (_state.phase == SessionPhase.done || _state.phase == SessionPhase.abandoned) {
       return;
     }
 
