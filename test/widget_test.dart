@@ -86,6 +86,17 @@ void main() {
       expect(find.text('Start a guided session when you are ready.'), findsOneWidget);
     });
 
+    testWidgets('router.go(/session) opens session without NavigationBar', (WidgetTester tester) async {
+      final GoRouter router = createAppRouter();
+      await tester.pumpWidget(KegelMasterApp(router: router));
+
+      router.go('/session');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Session'), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing);
+    });
+
     testWidgets('unknown location shows not found and Go home navigates to Home', (WidgetTester tester) async {
       final GoRouter router = createAppRouter();
       await tester.pumpWidget(KegelMasterApp(router: router));
