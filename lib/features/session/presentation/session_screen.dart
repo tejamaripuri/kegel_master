@@ -62,16 +62,50 @@ class _SessionScreenState extends State<SessionScreen> {
     }
   }
 
-  void _endSession() {
-    if (_engine.state.phase == SessionPhase.done ||
-        _engine.state.phase == SessionPhase.abandoned) {
+  void _popWhenAllowed() {
+    if (!mounted) return;
+    final NavigatorState nav = Navigator.of(context);
+    if (nav.canPop()) {
+      nav.pop();
+    }
+  }
+
+  Future<void> _onEndSessionPressed() async {
+    final SessionPhase phase = _engine.state.phase;
+    if (phase == SessionPhase.done || phase == SessionPhase.abandoned) {
+      _popWhenAllowed();
       return;
     }
+
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('End session early?'),
+          content: const Text('Your progress in this session will stop.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('End'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !mounted) return;
+
     setState(() {
       _engine.endEarly();
     });
     _timer?.cancel();
     _timer = null;
+
+    _popWhenAllowed();
   }
 
   static String _phaseLabel(SessionPhase phase) {
@@ -121,8 +155,8 @@ class _SessionScreenState extends State<SessionScreen> {
           ),
           const Spacer(),
           FilledButton(
-            onPressed: () {},
-            child: const Text('Continue'),
+            onPressed: _popWhenAllowed,
+            child: const Text('Back to home'),
           ),
         ],
       );
@@ -144,8 +178,8 @@ class _SessionScreenState extends State<SessionScreen> {
           ),
           const Spacer(),
           FilledButton(
-            onPressed: () {},
-            child: const Text('Continue'),
+            onPressed: _popWhenAllowed,
+            child: const Text('Back to home'),
           ),
         ],
       );
@@ -183,7 +217,7 @@ class _SessionScreenState extends State<SessionScreen> {
               child: const Text('Skip'),
             ),
             OutlinedButton(
-              onPressed: _endSession,
+              onPressed: _onEndSessionPressed,
               child: const Text('End session'),
             ),
           ],
