@@ -94,6 +94,7 @@ class _SessionScreenState extends State<SessionScreen> {
     final SessionState s = _engine.state;
 
     return Scaffold(
+      appBar: AppBar(title: const Text('Session')),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -160,7 +161,7 @@ class _SessionScreenState extends State<SessionScreen> {
         ),
         const SizedBox(height: 24),
         Text(
-          '${s.remainingSeconds}',
+          '${s.remainingSeconds}s',
           style: Theme.of(context).textTheme.displayMedium,
           textAlign: TextAlign.center,
         ),
@@ -177,11 +178,11 @@ class _SessionScreenState extends State<SessionScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            TextButton(
+            FilledButton(
               onPressed: _skip,
               child: const Text('Skip'),
             ),
-            TextButton(
+            OutlinedButton(
               onPressed: _endSession,
               child: const Text('End session'),
             ),

@@ -19,8 +19,9 @@ void main() {
       ),
     );
 
+    expect(find.text('Session'), findsOneWidget);
     expect(find.text('Squeeze'), findsOneWidget);
-    expect(find.text('5'), findsOneWidget);
+    expect(find.text('5s'), findsOneWidget);
     expect(find.text('Set 1 of 2'), findsOneWidget);
     expect(find.text('Rep 1 of 2'), findsOneWidget);
     expect(find.text('Skip'), findsOneWidget);
