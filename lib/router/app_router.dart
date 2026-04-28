@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:kegel_master/features/home/presentation/home_screen.dart';
 import 'package:kegel_master/features/learn/presentation/learn_screen.dart';
 import 'package:kegel_master/features/progress/presentation/progress_screen.dart';
+import 'package:kegel_master/features/session/presentation/session_screen.dart';
 import 'package:kegel_master/features/settings/presentation/settings_screen.dart';
 import 'package:kegel_master/features/shell/main_navigation_shell.dart';
 
@@ -62,6 +63,11 @@ GoRouter createAppRouter() {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/session',
+        builder: (BuildContext context, GoRouterState state) =>
+            const SessionScreen(),
       ),
     ],
     errorBuilder: (BuildContext context, GoRouterState state) {
