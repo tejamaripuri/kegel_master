@@ -17,7 +17,7 @@ The app boots in `main()`, constructs `KegelMasterApp`, and uses **`MaterialApp.
 
 [`lib/router/app_router.dart`](../lib/router/app_router.dart) defines a single **`GoRouter`** with **`initialLocation: /home`**, a top-level **`redirect`** that sends **`/`** to **`/home`**, and an **`errorBuilder`** for unknown paths (minimal “not found” UI and a control that calls **`context.go('/home')`**). A sibling route **`/session`** sits next to the **`StatefulShellRoute`**: it is **not** inside the shell, so the session UI is full-screen without the bottom **`NavigationBar`**.
 
-[`lib/features/shell/main_navigation_shell.dart`](../lib/features/shell/main_navigation_shell.dart) hosts a Material 3 **`NavigationBar`** and a **`StatefulShellRoute.indexedStack`** branch body via **`StatefulNavigationShell`**. Tab changes call **`shell.goBranch(index)`** so the selected tab stays aligned with the active route (ready for web URL bar and deep links later). Indexed-stack semantics (off-tab routes stay mounted) are provided by **`StatefulShellRoute.indexedStack`**, not a hand-rolled **`IndexedStack`**.
+[`lib/features/shell/main_navigation_shell.dart`](../lib/features/shell/main_navigation_shell.dart) hosts a Material 3 **`NavigationBar`** and a **`StatefulShellRoute.indexedStack`** branch body via **`StatefulNavigationShell`**. Tab changes call **`shell.goBranch(index)`** so the selected tab stays aligned with the active route (deep links, notification opens, and similar mobile entry points later). Indexed-stack semantics (off-tab routes stay mounted) are provided by **`StatefulShellRoute.indexedStack`**, not a hand-rolled **`IndexedStack`**.
 
 | Path | Tab index | Screen |
 |------|-----------|--------|

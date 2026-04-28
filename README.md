@@ -2,6 +2,10 @@
 
 Flutter app for guided Kegel (pelvic floor) exercise sessions. (See `pubspec.yaml` description for the canonical one-liner.)
 
+## Supported platforms
+
+**Android** and **iOS (iPhone)** only. Web and desktop are not product targets for this repo.
+
 ## Prerequisites
 
 - [Flutter](https://docs.flutter.dev/get-started/install) with a Dart SDK compatible with **`^3.10.8`** (see `environment` in [pubspec.yaml](pubspec.yaml)).
@@ -15,7 +19,7 @@ flutter pub get
 flutter run
 ```
 
-Use your IDE’s device selector or pass `-d <device_id>` to target a specific device.
+Use an Android emulator, iOS simulator, or a physical Android or iPhone device. Use your IDE’s device selector or pass `-d <device_id>` to pick one.
 
 Optional checks:
 
@@ -33,4 +37,5 @@ flutter test
 
 ## Further reading
 
+- [Contributing](CONTRIBUTING.md) — how to contribute, including dependency and licensing expectations.
 - [Architecture overview](docs/ARCHITECTURE.md) — navigation, feature map, and conventions for extending the app.
