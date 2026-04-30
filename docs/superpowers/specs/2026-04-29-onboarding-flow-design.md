@@ -6,8 +6,9 @@
 ## Goals
 
 - Show a **clinically informed onboarding flow** before the user reaches the main **Home** experience, capturing demographics, goals, symptoms, and clinical history.
-- **Segment** users so exercise variables and UX (cues, session style, shell access) reflect **gender**, **primary goal**, **age band**, **symptoms**, and **clinical history**—not a single default for everyone.
-- Enforce **safety rules:** **catheter** → exercises suspended with a clear warning and **Learn-only** app surface until state is cleared; **chronic pelvic pain** → **down-training / relaxation** session protocol instead of aggressive strengthening.
+- **Segment** users so exercise variables and UX (**cues**, **session timings** where applicable, **shell access**) reflect **gender**, **primary goal**, **age band**, and **clinical history** (and **catheter** for gating)—not a single default for everyone. **Symptoms** are collected for segmentation **later**; **v1** does not change the exercise prescription from symptoms alone.
+- Enforce **safety rules:** **catheter** → exercises suspended with a clear warning and **Learn-only** app surface until state is cleared.
+- **Capture** symptom answers (including **chronic pelvic pain**) on the persisted profile for **future** plan personalization; **v1 does not** apply a separate session prescription or persisted derived flag from that answer.
 - **Persist** completion and profile **locally**; onboarding is **one-time** until the user triggers **reset** from **Settings** (full re-run including disclaimer).
 
 ## Non-goals (v1)
@@ -17,6 +18,7 @@
 - Legal review of disclaimer copy (placeholder acceptable; product owner replaces before release).
 - Final clinical validation of numeric timing tables (initial values are **tunable constants** with a clear single source of truth).
 - Dynamic A/B testing of question order or copy.
+- Symptom-driven session plans (e.g. down-training for chronic pelvic pain); deferred until a future release uses stored **`profile`**.
 
 ## Architecture decision
 
@@ -32,7 +34,7 @@ Use **GoRouter-first** onboarding: top-level **`/onboarding`** (and optional ste
 ### Catheter active (post-onboarding)
 
 - Persist **`catheterActive == true`** when the user selects **Currently using a catheter** in clinical history.
-- **Precedence:** **Catheter rules override all other clinical UX** (including chronic pelvic pain) until **`catheterActive`** is cleared. Session behavior for pain is irrelevant while catheter is active because **Session is unreachable**.
+- **Precedence:** **Catheter rules override** other onboarding outcomes for **shell access** until **`catheterActive`** is cleared (**Session** is unreachable in this mode).
 
 **Learn-only policy (approved option C):**
 
@@ -40,15 +42,13 @@ Use **GoRouter-first** onboarding: top-level **`/onboarding`** (and optional ste
 - **Block:** **`/home`**, **`/progress`**, **`/session`**. Attempts to open those paths **redirect to `/learn`**.
 - Show a **persistent banner** on Learn (and optionally Settings) explaining that **pelvic floor exercises are suspended** until the catheter is removed and the user has completed onboarding again without selecting catheter—or equivalent clinical clearance (copy is non-clinical “see your care team” framing).
 
-### Chronic pelvic pain (no active catheter)
+### Chronic pelvic pain (and other symptoms)
 
-- Persist derived flag **`downTrainingRecommended == true`** when **Chronic pelvic pain or pain during intimacy** is selected among symptoms.
-- **Shell:** Full four-tab shell remains available.
-- **Session:** Uses **relaxation / down-training** protocol (Section: Session pathways).
+- **v1:** Only stored inside **`profile`** (symptoms list). No extra persisted flag and **no** change to **`SessionPrescription`**, shell gates, or session copy based on this answer. A future release may introduce **down-training / relaxation** plans (or other tailoring) using the stored profile.
 
 ### Settings reset
 
-- **Reset onboarding** clears: **`onboardingComplete`**, serialized **profile**, **`catheterActive`**, **`downTrainingRecommended`**, and any other derived fields; optionally clears **`disclaimerAcceptedAt`** so disclaimer runs again (recommended for consistency).
+- **Reset onboarding** clears: **`onboardingComplete`**, serialized **profile**, **`catheterActive`**, and any other derived fields; optionally clears **`disclaimerAcceptedAt`** so disclaimer runs again (recommended for consistency).
 - After confirm dialog, navigate to **`/onboarding`** (Disclaimer first).
 
 ## Onboarding screens and validation
@@ -89,7 +89,7 @@ Use **GoRouter-first** onboarding: top-level **`/onboarding`** (and optional ste
 
 **Validation:** **None** is **mutually exclusive** with all other options (choosing **None** clears others; choosing any other clears **None**).
 
-**Impact:** **Chronic pelvic pain** option sets **`downTrainingRecommended`** for Session (when catheter is not active).
+**Impact:** **v1** — no app behavior change from individual symptom choices; data retained for **future** plan logic.
 
 ### Step 5 — Clinical history (multi-select)
 
@@ -112,15 +112,12 @@ Use **GoRouter-first** onboarding: top-level **`/onboarding`** (and optional ste
 ## Persistence
 
 - **v1:** Local storage only, e.g. **`shared_preferences`** with either a **single JSON blob** (`onboarding_profile_v1`) plus **`schemaVersion`**, or equivalent key set. Single blob preferred for atomic reset.
-- **Keys / fields (conceptual):** `schemaVersion`, `onboardingComplete`, `disclaimerAcceptedAt`, `profile` (raw answers), `catheterActive`, `downTrainingRecommended` (may be recomputed from `profile` on read if preferred; persisted denormalization is acceptable for redirect speed).
+- **Keys / fields (conceptual):** `schemaVersion`, `onboardingComplete`, `disclaimerAcceptedAt`, `profile` (raw answers), **`catheterActive`** (denormalized for fast redirect; may be recomputed from `profile` on read if the team prefers a single source of truth).
 
 ## Domain model
 
 - Immutable **`OnboardingProfile`** (enums + structured multi-selects).
-- **Pure functions** (or a small service) **`SessionPrescription fromProfile(OnboardingProfile)`** returning:
-  - **`SessionPathway`:** `strengthDefault` | `relaxationDownTrain`  
-    - `relaxationDownTrain` when **`downTrainingRecommended`** and **`!catheterActive`**.
-  - **`SessionConfig`** (or pathway-specific config) **overrides** relative to `SessionConfig.defaults` (see [home-session design](2026-04-26-home-session-screens-design.md)).
+- **Pure functions** (or a small service) **`SessionPrescription fromProfile(OnboardingProfile)`** returning **`SessionConfig` overrides** (or equivalent) relative to `SessionConfig.defaults` from **age**, **primary goal**, **clinical history** (except catheter, which gates access rather than tuning timings while active), and **gender** (cues / copy IDs). **Symptoms** (including chronic pelvic pain) are **not** inputs to v1 prescription; reserve for a future **`fromProfile`** revision.
 
 ## Mapping tables (initial heuristics)
 
@@ -140,10 +137,8 @@ Values are **placeholders** until clinically signed off; keep all numbers in **o
 |------|-----------|
 | Postpartum / Post-surgical (prostate) | **Gentler** volume: lower `repsPerSet` and/or `targetSets`, longer buffers vs squeeze. |
 | Prevention / maintenance | Near defaults. |
-| Sexual performance | Slight increase in work relative to rest only if clinically acceptable; **must not** conflict with `relaxationDownTrain`. |
+| Sexual performance | Slight increase in work relative to rest only if clinically acceptable. |
 | Incontinence management | Moderate endurance bias; align with age adjustments. |
-
-When **`SessionPathway.relaxationDownTrain`**, **ignore** strength-biased goal tweaks for squeeze intensity framing; timings favor **ease, release, breathing**, and **lower duty cycle** (specific seconds: implementation constants).
 
 ### Gender → cues
 
@@ -151,15 +146,15 @@ When **`SessionPathway.relaxationDownTrain`**, **ignore** strength-biased goal t
 
 ## Session, Home, Progress, Learn
 
-- **Session:** If **`relaxationDownTrain`** → relaxation-focused phases and copy; avoid “max contraction” framing. If **`catheterActive`** → route **not reachable**; redirect to **`/learn`**.
-- **Home / Progress:** In catheter mode, **unavailable** (redirect). In pain path without catheter, **recovery-oriented** messaging; no “push harder” CTAs inconsistent with down-training.
-- **Learn:** Always allowed in catheter mode; optional future: filter or order content by **goal** and **gender** metadata.
+- **Session:** **v1** prescription from **`fromProfile`** as above. If **`catheterActive`** → route **not reachable**; redirect to **`/learn`**.
+- **Home / Progress:** In catheter mode, **unavailable** (redirect). **v1** does not special-case other symptom answers in Home/Progress copy (future releases may).
+- **Learn:** Always allowed in catheter mode; optional future: filter or order content by **goal**, **gender**, and **symptoms**.
 
 ## Testing (v1)
 
-- **Unit tests:** `redirect` matrix (incomplete onboarding; complete + catheter; complete + pain; complete + both pain and catheter → catheter wins; reset clears state).
+- **Unit tests:** `redirect` matrix (incomplete onboarding; complete + catheter; complete + catheter with profile that also includes chronic pelvic pain → catheter wins; reset clears state).
 - **Unit tests:** Multi-select **None** exclusivity.
-- **Unit tests:** `fromProfile` outputs for representative profiles (including edge: only “None” symptoms).
+- **Unit tests:** `fromProfile` outputs for representative profiles (symptom choices do not change v1 outputs; include edge: only “None” symptoms).
 
 ## References
 
