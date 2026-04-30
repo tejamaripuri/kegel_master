@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:kegel_master/features/onboarding/presentation/onboarding_scope.dart';
+import 'package:kegel_master/features/session/domain/session_config.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -21,7 +23,11 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: () => context.push('/session'),
+              onPressed: () {
+                final SessionConfig? config =
+                    OnboardingScope.of(context).currentSessionConfigOrNull();
+                context.push('/session', extra: config ?? SessionConfig.defaults);
+              },
               child: const Text('Start session'),
             ),
           ],

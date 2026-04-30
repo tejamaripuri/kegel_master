@@ -55,4 +55,21 @@ class SessionConfig {
     repsPerSet: 10,
     targetSets: 3,
   );
+
+  SessionConfig copyWith({
+    int? squeezeSeconds,
+    int? relaxSeconds,
+    int? bufferBetweenSetsSeconds,
+    int? repsPerSet,
+    int? targetSets,
+  }) {
+    return SessionConfig(
+      squeezeSeconds: squeezeSeconds ?? this.squeezeSeconds,
+      relaxSeconds: relaxSeconds ?? this.relaxSeconds,
+      bufferBetweenSetsSeconds:
+          bufferBetweenSetsSeconds ?? this.bufferBetweenSetsSeconds,
+      repsPerSet: repsPerSet ?? this.repsPerSet,
+      targetSets: targetSets ?? this.targetSets,
+    );
+  }
 }

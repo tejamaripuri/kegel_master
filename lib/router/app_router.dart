@@ -3,23 +3,31 @@ import 'package:go_router/go_router.dart';
 
 import 'package:kegel_master/features/home/presentation/home_screen.dart';
 import 'package:kegel_master/features/learn/presentation/learn_screen.dart';
+import 'package:kegel_master/features/onboarding/application/onboarding_gate.dart';
+import 'package:kegel_master/features/onboarding/domain/onboarding_redirect.dart';
+import 'package:kegel_master/features/onboarding/presentation/onboarding_flow_screen.dart';
 import 'package:kegel_master/features/progress/presentation/progress_screen.dart';
+import 'package:kegel_master/features/session/domain/session_config.dart';
 import 'package:kegel_master/features/session/presentation/session_screen.dart';
 import 'package:kegel_master/features/settings/presentation/settings_screen.dart';
 import 'package:kegel_master/features/shell/main_navigation_shell.dart';
 
-final GoRouter defaultAppRouter = createAppRouter();
-
-GoRouter createAppRouter() {
+GoRouter createAppRouter({required OnboardingGate gate}) {
   return GoRouter(
     initialLocation: '/home',
+    refreshListenable: gate,
     redirect: (BuildContext context, GoRouterState state) {
-      if (state.uri.path == '/') {
-        return '/home';
-      }
-      return null;
+      return resolveOnboardingRedirect(
+        path: state.uri.path,
+        snapshot: gate.snapshot,
+      );
     },
     routes: <RouteBase>[
+      GoRoute(
+        path: '/onboarding',
+        builder: (BuildContext context, GoRouterState state) =>
+            const OnboardingFlowScreen(),
+      ),
       StatefulShellRoute.indexedStack(
         builder: (BuildContext context, GoRouterState state,
             StatefulNavigationShell navigationShell) {
@@ -66,8 +74,12 @@ GoRouter createAppRouter() {
       ),
       GoRoute(
         path: '/session',
-        builder: (BuildContext context, GoRouterState state) =>
-            const SessionScreen(),
+        builder: (BuildContext context, GoRouterState state) {
+          final Object? extra = state.extra;
+          final SessionConfig config =
+              extra is SessionConfig ? extra : SessionConfig.defaults;
+          return SessionScreen(config: config);
+        },
       ),
     ],
     errorBuilder: (BuildContext context, GoRouterState state) {
