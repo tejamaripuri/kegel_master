@@ -200,19 +200,21 @@ class _RadioStep<T> extends StatelessWidget {
           child: Text(title, style: Theme.of(context).textTheme.titleLarge),
         ),
         Expanded(
-          child: ListView(
-            children: values
-                .map(
-                  (T v) => RadioListTile<T>(
-                    title: Text(label(v)),
-                    value: v,
-                    groupValue: value,
-                    onChanged: (T? x) {
-                      if (x != null) onChanged(x);
-                    },
-                  ),
-                )
-                .toList(),
+          child: RadioGroup<T>(
+            groupValue: value,
+            onChanged: (T? x) {
+              if (x != null) onChanged(x);
+            },
+            child: ListView(
+              children: values
+                  .map(
+                    (T v) => RadioListTile<T>(
+                      title: Text(label(v)),
+                      value: v,
+                    ),
+                  )
+                  .toList(),
+            ),
           ),
         ),
         Padding(
