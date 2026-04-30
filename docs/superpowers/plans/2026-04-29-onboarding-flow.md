@@ -1080,6 +1080,8 @@ git commit -m "feat(onboarding): GoRouter onboarding route, redirects, and Home 
 
 - [ ] **Step 1: Learn catheter banner**
 
+Use a static strip (no `ScaffoldMessenger`) so the warning always shows:
+
 ```dart
 import 'package:flutter/material.dart';
 import 'package:kegel_master/features/onboarding/presentation/onboarding_scope.dart';
@@ -1095,14 +1097,17 @@ class LearnScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('Learn')),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+        children: <Widget>[
           if (catheter)
-            const MaterialBanner(
-              content: Text(
-                'Pelvic floor exercises are suspended while you use a catheter. '
-                'Use educational content only and follow your care team’s advice.',
+            ColoredBox(
+              color: Theme.of(context).colorScheme.errorContainer,
+              child: const Padding(
+                padding: EdgeInsets.all(12),
+                child: Text(
+                  'Pelvic floor exercises are suspended while you use a catheter. '
+                  'Educational content only — follow your care team.',
+                ),
               ),
-              actions: <Widget>[],
             ),
           const Expanded(
             child: Center(
@@ -1115,24 +1120,6 @@ class LearnScreen extends StatelessWidget {
   }
 }
 ```
-
-Note: `MaterialBanner` normally needs `ScaffoldMessenger` to show; for a static strip, prefer `Container` with `ColorScheme.errorContainer` and `Padding` if banner does not show—verify in widget test or swap to:
-
-```dart
-if (catheter)
-  ColoredBox(
-    color: Theme.of(context).colorScheme.errorContainer,
-    child: const Padding(
-      padding: EdgeInsets.all(12),
-      child: Text(
-        'Pelvic floor exercises are suspended while you use a catheter. '
-        'Educational content only — follow your care team.',
-      ),
-    ),
-  ),
-```
-
-Use the `ColoredBox` version if `MaterialBanner` is inert without `ScaffoldMessenger`.
 
 - [ ] **Step 2: Settings reset**
 
