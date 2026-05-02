@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kegel_master/features/onboarding/application/onboarding_gate.dart';
 import 'package:kegel_master/features/onboarding/presentation/onboarding_scope.dart';
+import 'package:kegel_master/features/progress/data/in_memory_progress_stores.dart';
+import 'package:kegel_master/features/progress/presentation/progress_scope.dart';
 import 'package:kegel_master/router/app_router.dart';
 
 import 'package:kegel_master/app.dart';
@@ -13,10 +15,17 @@ Future<GoRouter> _pumpAppWithCompletedOnboarding(WidgetTester tester) async {
   final OnboardingGate gate = OnboardingGate(persistence);
   await gate.load();
   final GoRouter router = createAppRouter(gate: gate);
+  final InMemoryUserPreferencesStore userPreferences =
+      InMemoryUserPreferencesStore();
+  await userPreferences.ensureSeedRow();
   await tester.pumpWidget(
     OnboardingScope(
       gate: gate,
-      child: KegelMasterApp(router: router),
+      child: ProgressScope(
+        sessionHistory: InMemorySessionHistoryStore(),
+        userPreferences: userPreferences,
+        child: KegelMasterApp(router: router),
+      ),
     ),
   );
   await tester.pumpAndSettle();
