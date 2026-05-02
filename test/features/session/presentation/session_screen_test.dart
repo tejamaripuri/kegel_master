@@ -1,25 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kegel_master/features/progress/data/in_memory_progress_stores.dart';
+import 'package:kegel_master/features/progress/presentation/progress_scope.dart';
 import 'package:kegel_master/features/session/domain/session_config.dart';
 import 'package:kegel_master/features/session/presentation/session_screen.dart';
 
+Widget _wrapProgress(Widget child) {
+  final InMemoryUserPreferencesStore userPreferences =
+      InMemoryUserPreferencesStore();
+  userPreferences.ensureSeedRow();
+  return ProgressScope(
+    sessionHistory: InMemorySessionHistoryStore(),
+    userPreferences: userPreferences,
+    child: child,
+  );
+}
+
 Widget _wrapWithPushRoute(SessionConfig config) {
-  return MaterialApp(
-    home: Scaffold(
-      body: Center(
-        child: Builder(
-          builder: (BuildContext context) {
-            return FilledButton(
-              onPressed: () {
-                Navigator.of(context).push<void>(
-                  MaterialPageRoute<void>(
-                    builder: (_) => SessionScreen(config: config),
-                  ),
-                );
-              },
-              child: const Text('Open session'),
-            );
-          },
+  return _wrapProgress(
+    MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Builder(
+            builder: (BuildContext context) {
+              return FilledButton(
+                onPressed: () {
+                  Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (_) => SessionScreen(config: config),
+                    ),
+                  );
+                },
+                child: const Text('Open session'),
+              );
+            },
+          ),
         ),
       ),
     ),
@@ -37,8 +52,10 @@ void main() {
 
   testWidgets('initial UI shows Squeeze and Skip/End controls', (WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: SessionScreen(config: testConfig),
+      _wrapProgress(
+        MaterialApp(
+          home: SessionScreen(config: testConfig),
+        ),
       ),
     );
 
@@ -53,8 +70,10 @@ void main() {
 
   testWidgets('tapping Skip advances to Relax', (WidgetTester tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: SessionScreen(config: testConfig),
+      _wrapProgress(
+        MaterialApp(
+          home: SessionScreen(config: testConfig),
+        ),
       ),
     );
 

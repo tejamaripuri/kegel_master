@@ -1,8 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:kegel_master/features/progress/domain/session_history_entry.dart';
+import 'package:kegel_master/features/progress/domain/session_outcome.dart';
+import 'package:kegel_master/features/progress/presentation/progress_scope.dart';
 import 'package:kegel_master/features/session/domain/session_config.dart';
 import 'package:kegel_master/features/session/domain/session_engine.dart';
+import 'package:uuid/uuid.dart';
 
 class SessionScreen extends StatefulWidget {
   const SessionScreen({super.key, this.config});
@@ -16,6 +21,8 @@ class SessionScreen extends StatefulWidget {
 class _SessionScreenState extends State<SessionScreen> {
   late final SessionEngine _engine;
   Timer? _timer;
+  final DateTime _sessionStartedAt = DateTime.now().toUtc();
+  bool _persisted = false;
 
   SessionConfig get _config => widget.config ?? SessionConfig.defaults;
 
@@ -67,6 +74,32 @@ class _SessionScreenState extends State<SessionScreen> {
     final SessionPhase after = _engine.state.phase;
     if (after == SessionPhase.done || after == SessionPhase.abandoned) {
       _cancelPeriodicTimer();
+      unawaited(_persistIfNeeded(_engine.state));
+    }
+  }
+
+  Future<void> _persistIfNeeded(SessionState s) async {
+    if (s.phase != SessionPhase.done && s.phase != SessionPhase.abandoned) {
+      return;
+    }
+    if (_persisted) return;
+    _persisted = true;
+    if (!mounted) return;
+    final store = ProgressScope.of(context).sessionHistory;
+    final SessionHistoryEntry entry = SessionHistoryEntry(
+      id: const Uuid().v4(),
+      startedAt: _sessionStartedAt,
+      endedAt: DateTime.now().toUtc(),
+      configSnapshot: _config,
+      outcome: s.isCompleted ? SessionOutcome.completed : SessionOutcome.abandoned,
+      skippedPhaseCount: s.skippedPhaseCount,
+    );
+    try {
+      await store.appendRun(entry);
+    } catch (e, st) {
+      if (kDebugMode) {
+        debugPrint('Session persist failed: $e\n$st');
+      }
     }
   }
 
@@ -80,6 +113,7 @@ class _SessionScreenState extends State<SessionScreen> {
     });
     if (_engine.state.phase == SessionPhase.done || _engine.state.phase == SessionPhase.abandoned) {
       _cancelPeriodicTimer();
+      unawaited(_persistIfNeeded(_engine.state));
     }
   }
 
@@ -131,6 +165,7 @@ class _SessionScreenState extends State<SessionScreen> {
       _engine.endEarly();
     });
     _cancelPeriodicTimer();
+    unawaited(_persistIfNeeded(_engine.state));
 
     _popWhenAllowed();
   }
