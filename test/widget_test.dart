@@ -56,6 +56,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Your progress'), findsOneWidget);
+      expect(find.text('Current streak: 0 days'), findsOneWidget);
       expect(find.text('Achievements'), findsOneWidget);
       expect(find.text('Badges and milestones — coming soon.'), findsOneWidget);
     });
