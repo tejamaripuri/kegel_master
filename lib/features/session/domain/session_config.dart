@@ -48,6 +48,24 @@ class SessionConfig {
   final int repsPerSet;
   final int targetSets;
 
+  Map<String, Object?> toJson() => {
+        'squeezeSeconds': squeezeSeconds,
+        'relaxSeconds': relaxSeconds,
+        'bufferBetweenSetsSeconds': bufferBetweenSetsSeconds,
+        'repsPerSet': repsPerSet,
+        'targetSets': targetSets,
+      };
+
+  static SessionConfig fromJson(Map<String, Object?> json) {
+    return SessionConfig(
+      squeezeSeconds: json['squeezeSeconds']! as int,
+      relaxSeconds: json['relaxSeconds']! as int,
+      bufferBetweenSetsSeconds: json['bufferBetweenSetsSeconds']! as int,
+      repsPerSet: json['repsPerSet']! as int,
+      targetSets: json['targetSets']! as int,
+    );
+  }
+
   static const SessionConfig defaults = SessionConfig._(
     squeezeSeconds: 5,
     relaxSeconds: 5,
