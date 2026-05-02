@@ -5,13 +5,29 @@ import 'package:kegel_master/features/progress/domain/effective_session_config.d
 import 'package:kegel_master/features/progress/presentation/progress_scope.dart';
 import 'package:kegel_master/features/session/domain/session_config.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _loadedMirrorFuture = false;
+  late Future<SessionConfig?> _mirrorFuture;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_loadedMirrorFuture) {
+      _loadedMirrorFuture = true;
+      _mirrorFuture = ProgressScope.of(context).userPreferences.readMirror();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final gate = OnboardingScope.of(context);
-    final prefs = ProgressScope.of(context).userPreferences;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Home')),
@@ -28,7 +44,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             FutureBuilder<SessionConfig?>(
-              future: prefs.readMirror(),
+              future: _mirrorFuture,
               builder: (context, snap) {
                 if (snap.connectionState == ConnectionState.waiting) {
                   return const SizedBox(

@@ -12,12 +12,25 @@ class ProgressScreen extends StatefulWidget {
 
 class _ProgressScreenState extends State<ProgressScreen> {
   Future<List<DateTime>>? _completedEndedAtUtcFuture;
+  bool _wasRouteCurrent = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _completedEndedAtUtcFuture ??=
+    final bool isCurrent = ModalRoute.of(context)?.isCurrent ?? true;
+    if (!isCurrent) {
+      _wasRouteCurrent = false;
+      return;
+    }
+    if (_wasRouteCurrent) return;
+    _wasRouteCurrent = true;
+    final future =
         ProgressScope.of(context).sessionHistory.completedEndedAtUtc();
+    if (_completedEndedAtUtcFuture == null) {
+      _completedEndedAtUtcFuture = future;
+    } else {
+      setState(() => _completedEndedAtUtcFuture = future);
+    }
   }
 
   @override

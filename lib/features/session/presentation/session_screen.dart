@@ -83,7 +83,6 @@ class _SessionScreenState extends State<SessionScreen> {
       return;
     }
     if (_persisted) return;
-    _persisted = true;
     if (!mounted) return;
     final store = ProgressScope.of(context).sessionHistory;
     final SessionHistoryEntry entry = SessionHistoryEntry(
@@ -96,6 +95,8 @@ class _SessionScreenState extends State<SessionScreen> {
     );
     try {
       await store.appendRun(entry);
+      if (!mounted) return;
+      _persisted = true;
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('Session persist failed: $e\n$st');
