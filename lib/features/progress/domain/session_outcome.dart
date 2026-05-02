@@ -1,0 +1,4 @@
+enum SessionOutcome {
+  completed,
+  abandoned,
+}
