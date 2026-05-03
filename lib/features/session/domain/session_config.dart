@@ -69,8 +69,8 @@ class SessionConfig {
   static const SessionConfig defaults = SessionConfig._(
     squeezeSeconds: 3,
     relaxSeconds: 3,
-    bufferBetweenSetsSeconds: 4,
-    repsPerSet: 5,
+    bufferBetweenSetsSeconds: 60,
+    repsPerSet: 10,
     targetSets: 3,
   );
 
