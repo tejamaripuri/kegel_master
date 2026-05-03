@@ -48,6 +48,24 @@ class SessionConfig {
   final int repsPerSet;
   final int targetSets;
 
+  @override
+  bool operator ==(Object other) =>
+      other is SessionConfig &&
+      other.squeezeSeconds == squeezeSeconds &&
+      other.relaxSeconds == relaxSeconds &&
+      other.bufferBetweenSetsSeconds == bufferBetweenSetsSeconds &&
+      other.repsPerSet == repsPerSet &&
+      other.targetSets == targetSets;
+
+  @override
+  int get hashCode => Object.hash(
+        squeezeSeconds,
+        relaxSeconds,
+        bufferBetweenSetsSeconds,
+        repsPerSet,
+        targetSets,
+      );
+
   Map<String, Object?> toJson() => {
         'squeezeSeconds': squeezeSeconds,
         'relaxSeconds': relaxSeconds,
