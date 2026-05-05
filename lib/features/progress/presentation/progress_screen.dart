@@ -17,18 +17,21 @@ class ProgressScreen extends StatefulWidget {
 class _ProgressScreenState extends State<ProgressScreen> {
   Future<List<DateTime>>? _completedEndedAtUtcFuture;
   Future<List<SessionHistoryEntry>>? _runsFuture;
-  bool _wasRouteCurrent = false;
+  bool _progressTabWasActive = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final bool isCurrent = ModalRoute.of(context)?.isCurrent ?? true;
-    if (!isCurrent) {
-      _wasRouteCurrent = false;
+    // StatefulShellRoute.indexedStack wraps inactive branches in
+    // TickerMode(enabled: false). ModalRoute.isCurrent stays true for those
+    // branches and flips when a local modal opens, so it is the wrong signal.
+    final bool tabActive = TickerMode.of(context);
+    if (!tabActive) {
+      _progressTabWasActive = false;
       return;
     }
-    if (_wasRouteCurrent) return;
-    _wasRouteCurrent = true;
+    if (_progressTabWasActive) return;
+    _progressTabWasActive = true;
     final scope = ProgressScope.of(context);
     final streakFuture = scope.sessionHistory.completedEndedAtUtc();
     final runsFuture = scope.sessionHistory.listAllRuns();

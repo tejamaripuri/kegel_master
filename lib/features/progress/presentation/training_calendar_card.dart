@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import 'package:kegel_master/features/progress/domain/streak_calculator.dart';
 import 'package:kegel_master/features/progress/domain/training_calendar_index.dart';
 
 typedef OnOpenTrainingDay = void Function(DateTime localDay);
+
+// table_calendar encodes grid days as UTC y-m-d, not wall-clock instants like session `endedAt`.
+DateTime _calendarCellLocalDay(DateTime d) =>
+    DateTime(d.year, d.month, d.day);
 
 class TrainingCalendarCard extends StatefulWidget {
   const TrainingCalendarCard({
@@ -27,13 +30,11 @@ class _TrainingCalendarCardState extends State<TrainingCalendarCard> {
   void initState() {
     super.initState();
     final n = DateTime.now();
-    _focusedDay = dateOnlyLocal(n);
+    _focusedDay = _calendarCellLocalDay(n);
   }
 
-  DateTime _normalizeDay(DateTime d) => dateOnlyLocal(d);
-
   List<Object> _eventsForDay(DateTime day) {
-    final key = _normalizeDay(day);
+    final key = _calendarCellLocalDay(day);
     if (widget.index.markedLocalDates.contains(key)) {
       return const [_Marked()];
     }
@@ -42,8 +43,8 @@ class _TrainingCalendarCardState extends State<TrainingCalendarCard> {
 
   @override
   Widget build(BuildContext context) {
-    final first = DateTime.utc(2020, 1, 1);
-    final last = DateTime.utc(2035, 12, 31);
+    final first = DateTime(2020, 1, 1);
+    final last = DateTime(2035, 12, 31);
 
     return TableCalendar<Object>(
       firstDay: first,
@@ -54,11 +55,11 @@ class _TrainingCalendarCardState extends State<TrainingCalendarCard> {
       calendarFormat: CalendarFormat.month,
       availableCalendarFormats: const {CalendarFormat.month: 'Month'},
       onPageChanged: (focused) {
-        setState(() => _focusedDay = _normalizeDay(focused));
+        setState(() => _focusedDay = _calendarCellLocalDay(focused));
       },
       onDaySelected: (selectedDay, focusedDay) {
-        setState(() => _focusedDay = _normalizeDay(focusedDay));
-        widget.onOpenDay(_normalizeDay(selectedDay));
+        setState(() => _focusedDay = _calendarCellLocalDay(focusedDay));
+        widget.onOpenDay(_calendarCellLocalDay(selectedDay));
       },
     );
   }
