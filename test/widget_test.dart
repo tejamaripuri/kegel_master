@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:table_calendar/table_calendar.dart';
 import 'package:kegel_master/features/onboarding/application/onboarding_gate.dart';
 import 'package:kegel_master/features/onboarding/presentation/onboarding_scope.dart';
 import 'package:kegel_master/features/progress/data/in_memory_progress_stores.dart';
@@ -56,7 +57,15 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Your progress'), findsOneWidget);
+      expect(find.text('Training calendar'), findsOneWidget);
+      expect(find.byType(TableCalendar<Object>), findsOneWidget);
       expect(find.text('Current streak: 0 days'), findsOneWidget);
+      for (var i = 0; i < 25; i++) {
+        if (find.text('Achievements').evaluate().isNotEmpty) break;
+        await tester.drag(find.text('Your progress'), const Offset(0, -350));
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
       expect(find.text('Achievements'), findsOneWidget);
       expect(find.text('Badges and milestones — coming soon.'), findsOneWidget);
     });
