@@ -8,6 +8,9 @@ import 'package:kegel_master/features/progress/data/in_memory_progress_stores.da
 import 'package:kegel_master/features/progress/presentation/progress_scope.dart';
 import 'package:kegel_master/router/app_router.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kegel_master/core/services/shared_preferences_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kegel_master/app.dart';
 import 'fakes/fake_onboarding_persistence.dart';
 
@@ -19,13 +22,22 @@ Future<GoRouter> _pumpAppWithCompletedOnboarding(WidgetTester tester) async {
   final InMemoryUserPreferencesStore userPreferences =
       InMemoryUserPreferencesStore();
   await userPreferences.ensureSeedRow();
+  
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await SharedPreferences.getInstance();
+
   await tester.pumpWidget(
-    OnboardingScope(
-      gate: gate,
-      child: ProgressScope(
-        sessionHistory: InMemorySessionHistoryStore(),
-        userPreferences: userPreferences,
-        child: KegelMasterApp(router: router),
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: OnboardingScope(
+        gate: gate,
+        child: ProgressScope(
+          sessionHistory: InMemorySessionHistoryStore(),
+          userPreferences: userPreferences,
+          child: KegelMasterApp(router: router),
+        ),
       ),
     ),
   );
