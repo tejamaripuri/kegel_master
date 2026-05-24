@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kegel_master/core/services/notification_service.dart';
+import 'package:kegel_master/features/settings/data/reminder_settings_controller.dart';
 import 'package:kegel_master/features/progress/domain/session_history_entry.dart';
 import 'package:kegel_master/features/progress/domain/session_outcome.dart';
 import 'package:kegel_master/features/progress/presentation/progress_scope.dart';
@@ -100,7 +101,12 @@ class _SessionScreenState extends ConsumerState<SessionScreen> {
       if (!mounted) return;
       _persisted = true;
       if (entry.outcome == SessionOutcome.completed) {
-        await ref.read(notificationServiceProvider).cancelTodayReminder();
+        final reminderSettings = ref.read(reminderSettingsControllerProvider);
+        if (reminderSettings.isEnabled) {
+          await ref
+              .read(notificationServiceProvider)
+              .cancelTodayReminder(reminderSettings.reminderTime);
+        }
       }
     } catch (e, st) {
       if (kDebugMode) {

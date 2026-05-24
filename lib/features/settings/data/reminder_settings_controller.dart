@@ -51,6 +51,10 @@ class ReminderSettingsController extends Notifier<ReminderSettings> {
       final granted = await notificationService.requestPermission();
       if (granted) {
         await notificationService.scheduleDailyReminder(state.reminderTime);
+      } else {
+        // Permission denied — revert toggle so the UI reflects reality.
+        await prefs.setBool(_isReminderEnabledKey, false);
+        state = state.copyWith(isEnabled: false);
       }
     } else {
       await notificationService.cancelAllReminders();

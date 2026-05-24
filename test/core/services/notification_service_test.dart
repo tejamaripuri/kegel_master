@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzData;
 import 'package:kegel_master/core/services/notification_service.dart';
 
@@ -105,32 +104,14 @@ void main() {
       expect(mockPlugin.zonedScheduleCalled, isTrue);
     });
 
-    test('cancelTodayReminder schedules reminder starting tomorrow if enabled', () async {
-      SharedPreferences.setMockInitialValues({
-        'isReminderEnabled': true,
-        'reminderHour': 8,
-        'reminderMinute': 0,
-      });
+    test('cancelTodayReminder cancels and reschedules for next week', () async {
+      // Act — caller is responsible for checking isEnabled before calling.
+      await notificationService.cancelTodayReminder(
+        const TimeOfDay(hour: 8, minute: 0),
+      );
 
-      // Act
-      await notificationService.cancelTodayReminder();
-
-      // Assert
+      // Assert — the rescheduled next-week notification was zonedScheduled.
       expect(mockPlugin.zonedScheduleCalled, isTrue);
-    });
-
-    test('cancelTodayReminder does nothing if reminder is disabled', () async {
-      SharedPreferences.setMockInitialValues({
-        'isReminderEnabled': false,
-        'reminderHour': 8,
-        'reminderMinute': 0,
-      });
-
-      // Act
-      await notificationService.cancelTodayReminder();
-
-      // Assert
-      expect(mockPlugin.zonedScheduleCalled, isFalse);
     });
   });
 }

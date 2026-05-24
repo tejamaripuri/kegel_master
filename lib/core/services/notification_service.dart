@@ -5,17 +5,32 @@ import 'package:flutter/services.dart';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
-final notificationServiceProvider = Provider<NotificationService>((ref) {
-  return NotificationService(FlutterLocalNotificationsPlugin());
+/// Always override this provider in main() and in tests via overrideWithValue.
+final notificationServiceProvider = Provider<NotificationService>((_) {
+  throw UnimplementedError(
+    'notificationServiceProvider must be overridden via overrideWithValue.',
+  );
 });
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin;
 
   NotificationService(this._plugin);
+
+  /// Shared notification details used for all reminders.
+  static const _reminderDetails = NotificationDetails(
+    android: AndroidNotificationDetails(
+      'v3_priority_channel',
+      'Reminders',
+      channelDescription: 'Priority reminders for exercises',
+      importance: Importance.max,
+      priority: Priority.high,
+      fullScreenIntent: true,
+    ),
+    iOS: DarwinNotificationDetails(),
+  );
 
   Future<void> initialize() async {
     const androidInitialize = AndroidInitializationSettings(
@@ -112,26 +127,12 @@ class NotificationService {
     for (int weekday = 1; weekday <= 7; weekday++) {
       final scheduledDate = _nextInstanceOfWeekdayAndTime(now, weekday, time);
 
-      const androidDetails = AndroidNotificationDetails(
-        'v3_priority_channel',
-        'Reminders',
-        channelDescription: 'Priority reminders for exercises',
-        importance: Importance.max,
-        priority: Priority.high,
-        fullScreenIntent: true,
-      );
-      const iosDetails = DarwinNotificationDetails();
-      const details = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
-
       await _plugin.zonedSchedule(
         10 + weekday, // notification ids 11 to 17
         'Kegel Reminder',
         'Time to do your exercises!',
         scheduledDate,
-        details,
+        _reminderDetails,
         androidScheduleMode: AndroidScheduleMode.alarmClock,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
@@ -140,21 +141,19 @@ class NotificationService {
     }
   }
 
-  Future<void> cancelTodayReminder() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isEnabled = prefs.getBool('isReminderEnabled') ?? false;
-    if (!isEnabled) return;
-    final hour = prefs.getInt('reminderHour') ?? 8;
-    final minute = prefs.getInt('reminderMinute') ?? 0;
-    final time = TimeOfDay(hour: hour, minute: minute);
-
+  /// Cancels today's reminder and reschedules it for next week.
+  ///
+  /// The caller is responsible for checking whether reminders are enabled
+  /// before invoking this method. [time] is the configured reminder time
+  /// (from [ReminderSettings.reminderTime]).
+  Future<void> cancelTodayReminder(TimeOfDay time) async {
     final now = tz.TZDateTime.now(tz.local);
     final int todayWeekday = now.weekday;
 
-    // First cancel today's notification
+    // Cancel today's notification.
     await _plugin.cancel(10 + todayWeekday);
 
-    // Reschedule it to next week
+    // Reschedule it to next week.
     var nextWeekDate = _nextInstanceOfWeekdayAndTime(now, todayWeekday, time);
     if (nextWeekDate.year == now.year &&
         nextWeekDate.month == now.month &&
@@ -162,26 +161,12 @@ class NotificationService {
       nextWeekDate = nextWeekDate.add(const Duration(days: 7));
     }
 
-    const androidDetails = AndroidNotificationDetails(
-      'v3_priority_channel',
-      'Reminders',
-      channelDescription: 'Priority reminders for exercises',
-      importance: Importance.max,
-      priority: Priority.high,
-      fullScreenIntent: true,
-    );
-    const iosDetails = DarwinNotificationDetails();
-    const details = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
     await _plugin.zonedSchedule(
       10 + todayWeekday,
       'Kegel Reminder',
       'Time to do your exercises!',
       nextWeekDate,
-      details,
+      _reminderDetails,
       androidScheduleMode: AndroidScheduleMode.alarmClock,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
