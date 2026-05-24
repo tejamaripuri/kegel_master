@@ -6,9 +6,11 @@ import 'package:kegel_master/core/services/shared_preferences_provider.dart';
 import 'package:kegel_master/core/services/notification_service.dart';
 import 'package:kegel_master/core/theme/theme_mode_controller.dart';
 import 'package:kegel_master/features/settings/presentation/settings_screen.dart';
+import 'package:kegel_master/features/progress/application/session_history_store.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockNotificationService extends Mock implements NotificationService {}
+class MockSessionHistoryStore extends Mock implements SessionHistoryStore {}
 
 void main() {
   setUpAll(() {
@@ -18,20 +20,24 @@ void main() {
   group('SettingsScreen', () {
     late SharedPreferences prefs;
     late MockNotificationService mockNotificationService;
+    late MockSessionHistoryStore mockSessionHistoryStore;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
       mockNotificationService = MockNotificationService();
+      mockSessionHistoryStore = MockSessionHistoryStore();
       
       when(() => mockNotificationService.requestPermission())
           .thenAnswer((_) async => true);
-      when(() => mockNotificationService.scheduleDailyReminder(any()))
+      when(() => mockNotificationService.scheduleDailyReminder(any(), todayCompleted: any(named: 'todayCompleted')))
           .thenAnswer((_) async {});
       when(() => mockNotificationService.cancelAllReminders())
           .thenAnswer((_) async {});
       when(() => mockNotificationService.isBatteryOptimizationExempted())
           .thenAnswer((_) async => true);
+      when(() => mockSessionHistoryStore.completedEndedAtUtc())
+          .thenAnswer((_) async => []);
     });
 
     Widget createWidgetUnderTest() {
@@ -39,6 +45,7 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           notificationServiceProvider.overrideWithValue(mockNotificationService),
+          sessionHistoryStoreProvider.overrideWithValue(mockSessionHistoryStore),
         ],
         child: Consumer(
           builder: (context, ref, child) {
@@ -91,7 +98,7 @@ void main() {
       expect(find.text('Reminder Time'), findsOneWidget);
       expect(prefs.getBool('isReminderEnabled'), isTrue);
       verify(() => mockNotificationService.requestPermission()).called(1);
-      verify(() => mockNotificationService.scheduleDailyReminder(any())).called(1);
+      verify(() => mockNotificationService.scheduleDailyReminder(any(), todayCompleted: any(named: 'todayCompleted'))).called(1);
       
       await tester.tap(switchFinder);
       await tester.pumpAndSettle();

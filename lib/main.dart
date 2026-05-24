@@ -60,6 +60,7 @@ Future<void> main() async {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         notificationServiceProvider.overrideWithValue(notificationService),
+        sessionHistoryStoreProvider.overrideWithValue(sessionHistory),
       ],
       child: OnboardingScope(
         gate: gate,

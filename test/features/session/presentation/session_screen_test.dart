@@ -5,6 +5,7 @@ import 'package:kegel_master/core/services/notification_service.dart';
 import 'package:kegel_master/core/services/shared_preferences_provider.dart';
 import 'package:kegel_master/features/progress/data/in_memory_progress_stores.dart';
 import 'package:kegel_master/features/progress/presentation/progress_scope.dart';
+import 'package:kegel_master/features/progress/application/session_history_store.dart';
 import 'package:kegel_master/features/session/domain/session_config.dart';
 import 'package:kegel_master/features/session/presentation/session_screen.dart';
 import 'package:mocktail/mocktail.dart';
@@ -26,13 +27,15 @@ Future<Widget> _wrapProgress(
   }
   // Obtain the SharedPreferences instance seeded by setUp.
   final prefs = await SharedPreferences.getInstance();
+  final sessionHistory = InMemorySessionHistoryStore();
   return ProviderScope(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(prefs),
       notificationServiceProvider.overrideWithValue(notifService),
+      sessionHistoryStoreProvider.overrideWithValue(sessionHistory),
     ],
     child: ProgressScope(
-      sessionHistory: InMemorySessionHistoryStore(),
+      sessionHistory: sessionHistory,
       userPreferences: userPreferences,
       child: child,
     ),
