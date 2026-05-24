@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kegel_master/features/onboarding/presentation/onboarding_scope.dart';
 import 'package:kegel_master/core/theme/theme_mode_controller.dart';
+import 'package:kegel_master/features/settings/data/reminder_settings_controller.dart';
+import 'package:kegel_master/core/services/notification_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -50,7 +52,10 @@ class SettingsScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Appearance', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'Appearance',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 16),
                 SegmentedButton<ThemeMode>(
                   segments: const [
@@ -72,11 +77,93 @@ class SettingsScreen extends ConsumerWidget {
                   ],
                   selected: {themeMode},
                   onSelectionChanged: (Set<ThemeMode> newSelection) {
-                    ref.read(themeModeControllerProvider.notifier).setThemeMode(newSelection.first);
+                    ref
+                        .read(themeModeControllerProvider.notifier)
+                        .setThemeMode(newSelection.first);
                   },
                 ),
               ],
             ),
+          ),
+          const Divider(),
+          Consumer(
+            builder: (context, ref, child) {
+              final reminderState = ref.watch(
+                reminderSettingsControllerProvider,
+              );
+              final notifService = ref.read(notificationServiceProvider);
+              return Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Daily Reminders'),
+                    subtitle: const Text(
+                      'Receive a daily nudge to do your exercises',
+                    ),
+                    value: reminderState.isEnabled,
+                    onChanged: (bool value) {
+                      ref
+                          .read(reminderSettingsControllerProvider.notifier)
+                          .setReminderEnabled(value);
+                    },
+                  ),
+                  if (reminderState.isEnabled)
+                    FutureBuilder<bool>(
+                      future: notifService.isBatteryOptimizationExempted(),
+                      builder: (context, snapshot) {
+                        final isExempted = snapshot.data ?? true;
+                        if (!isExempted) {
+                          return MaterialBanner(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.errorContainer,
+                            leading: Icon(
+                              Icons.battery_alert,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onErrorContainer,
+                            ),
+                            content: Text(
+                              'Battery optimization is blocking your reminders. Tap to fix.',
+                              style: TextStyle(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onErrorContainer,
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => notifService
+                                    .requestBatteryOptimizationExemption(),
+                                child: const Text('Fix Now'),
+                              ),
+                            ],
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  if (reminderState.isEnabled)
+                    ListTile(
+                      title: const Text('Reminder Time'),
+                      subtitle: Text(
+                        reminderState.reminderTime.format(context),
+                      ),
+                      trailing: const Icon(Icons.access_time),
+                      onTap: () async {
+                        final TimeOfDay? picked = await showTimePicker(
+                          context: context,
+                          initialTime: reminderState.reminderTime,
+                        );
+                        if (picked != null) {
+                          ref
+                              .read(reminderSettingsControllerProvider.notifier)
+                              .setReminderTime(picked);
+                        }
+                      },
+                    ),
+                ],
+              );
+            },
           ),
           const Divider(),
           ListTile(

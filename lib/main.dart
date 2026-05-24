@@ -17,9 +17,17 @@ import 'package:kegel_master/router/app_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kegel_master/core/services/shared_preferences_provider.dart';
+import 'package:kegel_master/core/services/notification_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter_timezone/flutter_timezone.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  tz.initializeTimeZones();
+  final timeZoneInfo = await FlutterTimezone.getLocalTimezone();
+  tz.setLocalLocation(tz.getLocation(timeZoneInfo.identifier));
   await applyAndroidSqliteWorkaroundIfNeeded();
 
   late final SessionHistoryStore sessionHistory;
@@ -38,6 +46,10 @@ Future<void> main() async {
   }
 
   final SharedPreferences prefs = await SharedPreferences.getInstance();
+  
+  final notificationService = NotificationService(FlutterLocalNotificationsPlugin());
+  await notificationService.initialize();
+
   final OnboardingPersistence persistence =
       SharedPreferencesOnboardingPersistence(prefs);
   final OnboardingGate gate = OnboardingGate(persistence);
@@ -47,6 +59,7 @@ Future<void> main() async {
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
+        notificationServiceProvider.overrideWithValue(notificationService),
       ],
       child: OnboardingScope(
         gate: gate,
