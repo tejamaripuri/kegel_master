@@ -1,3 +1,4 @@
+import 'package:kegel_master/features/progress/application/session_history_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -13,6 +14,10 @@ import 'package:kegel_master/core/services/shared_preferences_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kegel_master/app.dart';
 import 'fakes/fake_onboarding_persistence.dart';
+import 'package:kegel_master/core/services/notification_service.dart';
+import 'package:mocktail/mocktail.dart';
+
+class MockNotificationService extends Mock implements NotificationService {}
 
 Future<GoRouter> _pumpAppWithCompletedOnboarding(WidgetTester tester) async {
   final FakeOnboardingPersistence persistence = FakeOnboardingPersistence();
@@ -26,15 +31,21 @@ Future<GoRouter> _pumpAppWithCompletedOnboarding(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
 
+  final mockNotificationService = MockNotificationService();
+  when(() => mockNotificationService.registerTapHandler(any())).thenAnswer((_) {});
+  final sessionHistory = InMemorySessionHistoryStore();
+
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
+        notificationServiceProvider.overrideWithValue(mockNotificationService),
+        sessionHistoryStoreProvider.overrideWithValue(sessionHistory),
       ],
       child: OnboardingScope(
         gate: gate,
         child: ProgressScope(
-          sessionHistory: InMemorySessionHistoryStore(),
+          sessionHistory: sessionHistory,
           userPreferences: userPreferences,
           child: KegelMasterApp(router: router),
         ),
@@ -171,6 +182,57 @@ void main() {
       await tester.tap(find.text('Go home'));
       await tester.pumpAndSettle();
 
+      expect(find.text('Start a guided session when you are ready.'), findsOneWidget);
+    });
+
+    testWidgets('notification tap routes to Home screen', (WidgetTester tester) async {
+      final FakeOnboardingPersistence persistence = FakeOnboardingPersistence();
+      final OnboardingGate gate = OnboardingGate(persistence);
+      await gate.load();
+      final GoRouter router = createAppRouter(gate: gate);
+      final InMemoryUserPreferencesStore userPreferences =
+          InMemoryUserPreferencesStore();
+      await userPreferences.ensureSeedRow();
+      
+      final prefs = await SharedPreferences.getInstance();
+      final mockNotificationService = MockNotificationService();
+      
+      void Function()? registeredCallback;
+      when(() => mockNotificationService.registerTapHandler(any())).thenAnswer((invocation) {
+        registeredCallback = invocation.positionalArguments[0] as void Function();
+      });
+      final sessionHistory = InMemorySessionHistoryStore();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            notificationServiceProvider.overrideWithValue(mockNotificationService),
+            sessionHistoryStoreProvider.overrideWithValue(sessionHistory),
+          ],
+          child: OnboardingScope(
+            gate: gate,
+            child: ProgressScope(
+              sessionHistory: sessionHistory,
+              userPreferences: userPreferences,
+              child: KegelMasterApp(router: router),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Navigate away from home
+      router.go('/settings');
+      await tester.pumpAndSettle();
+      expect(find.text('Reset onboarding'), findsOneWidget);
+
+      // Simulate notification tap
+      expect(registeredCallback, isNotNull);
+      registeredCallback!();
+      await tester.pumpAndSettle();
+
+      // Should be back at Home screen
       expect(find.text('Start a guided session when you are ready.'), findsOneWidget);
     });
   });
