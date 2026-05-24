@@ -1,22 +1,48 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kegel_master/core/services/notification_service.dart';
+import 'package:kegel_master/core/services/shared_preferences_provider.dart';
 import 'package:kegel_master/features/progress/data/in_memory_progress_stores.dart';
 import 'package:kegel_master/features/progress/presentation/progress_scope.dart';
 import 'package:kegel_master/features/session/domain/session_config.dart';
 import 'package:kegel_master/features/session/presentation/session_screen.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-Widget _wrapProgress(Widget child) {
+class MockNotificationService extends Mock implements NotificationService {}
+
+Future<Widget> _wrapProgress(
+  Widget child, {
+  MockNotificationService? mockNotificationService,
+}) async {
   final InMemoryUserPreferencesStore userPreferences =
       InMemoryUserPreferencesStore();
   userPreferences.ensureSeedRow();
-  return ProgressScope(
-    sessionHistory: InMemorySessionHistoryStore(),
-    userPreferences: userPreferences,
-    child: child,
+  final notifService = mockNotificationService ?? MockNotificationService();
+  if (mockNotificationService == null) {
+    when(() => notifService.cancelTodayReminder(any()))
+        .thenAnswer((_) async {});
+  }
+  // Obtain the SharedPreferences instance seeded by setUp.
+  final prefs = await SharedPreferences.getInstance();
+  return ProviderScope(
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(prefs),
+      notificationServiceProvider.overrideWithValue(notifService),
+    ],
+    child: ProgressScope(
+      sessionHistory: InMemorySessionHistoryStore(),
+      userPreferences: userPreferences,
+      child: child,
+    ),
   );
 }
 
-Widget _wrapWithPushRoute(SessionConfig config) {
+Future<Widget> _wrapWithPushRoute(
+  SessionConfig config, {
+  MockNotificationService? mockNotificationService,
+}) async {
   return _wrapProgress(
     MaterialApp(
       home: Scaffold(
@@ -38,10 +64,25 @@ Widget _wrapWithPushRoute(SessionConfig config) {
         ),
       ),
     ),
+    mockNotificationService: mockNotificationService,
   );
 }
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(const TimeOfDay(hour: 0, minute: 0));
+  });
+
+  setUp(() {
+    // Provide a fresh SharedPreferences with reminders enabled so the
+    // isEnabled guard in session_screen passes during tests.
+    SharedPreferences.setMockInitialValues({
+      'isReminderEnabled': true,
+      'reminderHour': 8,
+      'reminderMinute': 0,
+    });
+  });
+
   final SessionConfig testConfig = SessionConfig(
     squeezeSeconds: 5,
     relaxSeconds: 5,
@@ -52,7 +93,7 @@ void main() {
 
   testWidgets('initial UI shows Squeeze and Skip/End controls', (WidgetTester tester) async {
     await tester.pumpWidget(
-      _wrapProgress(
+      await _wrapProgress(
         MaterialApp(
           home: SessionScreen(config: testConfig),
         ),
@@ -70,7 +111,7 @@ void main() {
 
   testWidgets('tapping Skip advances to Relax', (WidgetTester tester) async {
     await tester.pumpWidget(
-      _wrapProgress(
+      await _wrapProgress(
         MaterialApp(
           home: SessionScreen(config: testConfig),
         ),
@@ -84,7 +125,7 @@ void main() {
   });
 
   testWidgets('End session opens confirmation dialog then confirm closes screen', (WidgetTester tester) async {
-    await tester.pumpWidget(_wrapWithPushRoute(testConfig));
+    await tester.pumpWidget(await _wrapWithPushRoute(testConfig));
 
     await tester.tap(find.text('Open session'));
     await tester.pumpAndSettle();
@@ -110,7 +151,7 @@ void main() {
   });
 
   testWidgets('End session dialog Cancel dismisses without popping route', (WidgetTester tester) async {
-    await tester.pumpWidget(_wrapWithPushRoute(testConfig));
+    await tester.pumpWidget(await _wrapWithPushRoute(testConfig));
 
     await tester.tap(find.text('Open session'));
     await tester.pumpAndSettle();
@@ -135,7 +176,7 @@ void main() {
   });
 
   testWidgets('system back during active session opens end confirmation instead of popping', (WidgetTester tester) async {
-    await tester.pumpWidget(_wrapWithPushRoute(testConfig));
+    await tester.pumpWidget(await _wrapWithPushRoute(testConfig));
 
     await tester.tap(find.text('Open session'));
     await tester.pumpAndSettle();
@@ -167,7 +208,7 @@ void main() {
       targetSets: 2,
     );
 
-    await tester.pumpWidget(_wrapWithPushRoute(longSqueeze));
+    await tester.pumpWidget(await _wrapWithPushRoute(longSqueeze));
 
     await tester.tap(find.text('Open session'));
     await tester.pumpAndSettle();
@@ -205,7 +246,7 @@ void main() {
       targetSets: 1,
     );
 
-    await tester.pumpWidget(_wrapWithPushRoute(quickDoneConfig));
+    await tester.pumpWidget(await _wrapWithPushRoute(quickDoneConfig));
 
     await tester.tap(find.text('Open session'));
     await tester.pumpAndSettle();
@@ -223,5 +264,37 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Open session'), findsOneWidget);
+  });
+
+  testWidgets('completing a workout session cancels today reminder', (WidgetTester tester) async {
+    final SessionConfig quickDoneConfig = SessionConfig(
+      squeezeSeconds: 1,
+      relaxSeconds: 1,
+      bufferBetweenSetsSeconds: 0,
+      repsPerSet: 1,
+      targetSets: 1,
+    );
+
+    final mockNotificationService = MockNotificationService();
+    when(() => mockNotificationService.cancelTodayReminder(any()))
+        .thenAnswer((_) async {});
+
+    await tester.pumpWidget(
+      await _wrapWithPushRoute(
+        quickDoneConfig,
+        mockNotificationService: mockNotificationService,
+      ),
+    );
+
+    await tester.tap(find.text('Open session'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Skip'));
+    await tester.pump();
+    await tester.tap(find.text('Skip'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Done'), findsOneWidget);
+    verify(() => mockNotificationService.cancelTodayReminder(any())).called(1);
   });
 }
