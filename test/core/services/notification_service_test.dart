@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzData;
 import 'package:kegel_master/core/services/notification_service.dart';
 
@@ -20,6 +21,8 @@ class MockFlutterLocalNotificationsPlugin implements FlutterLocalNotificationsPl
       return null;
     } else if (invocation.memberName == #zonedSchedule) {
       zonedScheduleCalled = true;
+      return Future.value();
+    } else if (invocation.memberName == #cancel || invocation.memberName == #cancelAll) {
       return Future.value();
     }
     return super.noSuchMethod(invocation);
@@ -100,6 +103,34 @@ void main() {
 
       // Assert
       expect(mockPlugin.zonedScheduleCalled, isTrue);
+    });
+
+    test('cancelTodayReminder schedules reminder starting tomorrow if enabled', () async {
+      SharedPreferences.setMockInitialValues({
+        'isReminderEnabled': true,
+        'reminderHour': 8,
+        'reminderMinute': 0,
+      });
+
+      // Act
+      await notificationService.cancelTodayReminder();
+
+      // Assert
+      expect(mockPlugin.zonedScheduleCalled, isTrue);
+    });
+
+    test('cancelTodayReminder does nothing if reminder is disabled', () async {
+      SharedPreferences.setMockInitialValues({
+        'isReminderEnabled': false,
+        'reminderHour': 8,
+        'reminderMinute': 0,
+      });
+
+      // Act
+      await notificationService.cancelTodayReminder();
+
+      // Assert
+      expect(mockPlugin.zonedScheduleCalled, isFalse);
     });
   });
 }

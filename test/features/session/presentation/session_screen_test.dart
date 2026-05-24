@@ -1,22 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kegel_master/core/services/notification_service.dart';
 import 'package:kegel_master/features/progress/data/in_memory_progress_stores.dart';
 import 'package:kegel_master/features/progress/presentation/progress_scope.dart';
 import 'package:kegel_master/features/session/domain/session_config.dart';
 import 'package:kegel_master/features/session/presentation/session_screen.dart';
+import 'package:mocktail/mocktail.dart';
 
-Widget _wrapProgress(Widget child) {
+class MockNotificationService extends Mock implements NotificationService {}
+
+Widget _wrapProgress(Widget child, {MockNotificationService? mockNotificationService}) {
   final InMemoryUserPreferencesStore userPreferences =
       InMemoryUserPreferencesStore();
   userPreferences.ensureSeedRow();
-  return ProgressScope(
-    sessionHistory: InMemorySessionHistoryStore(),
-    userPreferences: userPreferences,
-    child: child,
+  final notifService = mockNotificationService ?? MockNotificationService();
+  if (mockNotificationService == null) {
+    when(() => notifService.cancelTodayReminder())
+        .thenAnswer((_) async {});
+  }
+  return ProviderScope(
+    overrides: [
+      notificationServiceProvider.overrideWithValue(notifService),
+    ],
+    child: ProgressScope(
+      sessionHistory: InMemorySessionHistoryStore(),
+      userPreferences: userPreferences,
+      child: child,
+    ),
   );
 }
 
-Widget _wrapWithPushRoute(SessionConfig config) {
+Widget _wrapWithPushRoute(SessionConfig config, {MockNotificationService? mockNotificationService}) {
   return _wrapProgress(
     MaterialApp(
       home: Scaffold(
@@ -38,6 +53,7 @@ Widget _wrapWithPushRoute(SessionConfig config) {
         ),
       ),
     ),
+    mockNotificationService: mockNotificationService,
   );
 }
 
@@ -223,5 +239,32 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Open session'), findsOneWidget);
+  });
+
+  testWidgets('completing a workout session cancels today reminder', (WidgetTester tester) async {
+    final SessionConfig quickDoneConfig = SessionConfig(
+      squeezeSeconds: 1,
+      relaxSeconds: 1,
+      bufferBetweenSetsSeconds: 0,
+      repsPerSet: 1,
+      targetSets: 1,
+    );
+
+    final mockNotificationService = MockNotificationService();
+    when(() => mockNotificationService.cancelTodayReminder())
+        .thenAnswer((_) async {});
+
+    await tester.pumpWidget(_wrapWithPushRoute(quickDoneConfig, mockNotificationService: mockNotificationService));
+
+    await tester.tap(find.text('Open session'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Skip'));
+    await tester.pump();
+    await tester.tap(find.text('Skip'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Done'), findsOneWidget);
+    verify(() => mockNotificationService.cancelTodayReminder()).called(1);
   });
 }

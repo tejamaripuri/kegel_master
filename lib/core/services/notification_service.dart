@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
@@ -85,8 +86,7 @@ class NotificationService {
     return false;
   }
 
-  Future<void> scheduleDailyReminder(TimeOfDay time) async {
-    final now = tz.TZDateTime.now(tz.local);
+  tz.TZDateTime _nextInstanceOfWeekdayAndTime(tz.TZDateTime now, int weekday, TimeOfDay time) {
     var scheduledDate = tz.TZDateTime(
       tz.local,
       now.year,
@@ -95,9 +95,71 @@ class NotificationService {
       time.hour,
       time.minute,
     );
-
-    if (scheduledDate.isBefore(now)) {
+    while (scheduledDate.weekday != weekday) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 7));
+    }
+    return scheduledDate;
+  }
+
+  Future<void> scheduleDailyReminder(TimeOfDay time) async {
+    await cancelAllReminders();
+
+    final now = tz.TZDateTime.now(tz.local);
+
+    for (int weekday = 1; weekday <= 7; weekday++) {
+      final scheduledDate = _nextInstanceOfWeekdayAndTime(now, weekday, time);
+
+      const androidDetails = AndroidNotificationDetails(
+        'v3_priority_channel',
+        'Reminders',
+        channelDescription: 'Priority reminders for exercises',
+        importance: Importance.max,
+        priority: Priority.high,
+        fullScreenIntent: true,
+      );
+      const iosDetails = DarwinNotificationDetails();
+      const details = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await _plugin.zonedSchedule(
+        10 + weekday, // notification ids 11 to 17
+        'Kegel Reminder',
+        'Time to do your exercises!',
+        scheduledDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.alarmClock,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+      );
+    }
+  }
+
+  Future<void> cancelTodayReminder() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isEnabled = prefs.getBool('isReminderEnabled') ?? false;
+    if (!isEnabled) return;
+    final hour = prefs.getInt('reminderHour') ?? 8;
+    final minute = prefs.getInt('reminderMinute') ?? 0;
+    final time = TimeOfDay(hour: hour, minute: minute);
+
+    final now = tz.TZDateTime.now(tz.local);
+    final int todayWeekday = now.weekday;
+
+    // First cancel today's notification
+    await _plugin.cancel(10 + todayWeekday);
+
+    // Reschedule it to next week
+    var nextWeekDate = _nextInstanceOfWeekdayAndTime(now, todayWeekday, time);
+    if (nextWeekDate.year == now.year &&
+        nextWeekDate.month == now.month &&
+        nextWeekDate.day == now.day) {
+      nextWeekDate = nextWeekDate.add(const Duration(days: 7));
     }
 
     const androidDetails = AndroidNotificationDetails(
@@ -115,15 +177,15 @@ class NotificationService {
     );
 
     await _plugin.zonedSchedule(
-      1, // notification id for daily reminder
+      10 + todayWeekday,
       'Kegel Reminder',
       'Time to do your exercises!',
-      scheduledDate,
+      nextWeekDate,
       details,
       androidScheduleMode: AndroidScheduleMode.alarmClock,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
+      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
     );
   }
 

@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kegel_master/core/services/notification_service.dart';
 import 'package:kegel_master/features/progress/domain/session_history_entry.dart';
 import 'package:kegel_master/features/progress/domain/session_outcome.dart';
 import 'package:kegel_master/features/progress/presentation/progress_scope.dart';
@@ -9,16 +11,16 @@ import 'package:kegel_master/features/session/domain/session_config.dart';
 import 'package:kegel_master/features/session/domain/session_engine.dart';
 import 'package:uuid/uuid.dart';
 
-class SessionScreen extends StatefulWidget {
+class SessionScreen extends ConsumerStatefulWidget {
   const SessionScreen({super.key, this.config});
 
   final SessionConfig? config;
 
   @override
-  State<SessionScreen> createState() => _SessionScreenState();
+  ConsumerState<SessionScreen> createState() => _SessionScreenState();
 }
 
-class _SessionScreenState extends State<SessionScreen> {
+class _SessionScreenState extends ConsumerState<SessionScreen> {
   late final SessionEngine _engine;
   Timer? _timer;
   final DateTime _sessionStartedAt = DateTime.now().toUtc();
@@ -97,6 +99,9 @@ class _SessionScreenState extends State<SessionScreen> {
       await store.appendRun(entry);
       if (!mounted) return;
       _persisted = true;
+      if (entry.outcome == SessionOutcome.completed) {
+        await ref.read(notificationServiceProvider).cancelTodayReminder();
+      }
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('Session persist failed: $e\n$st');
