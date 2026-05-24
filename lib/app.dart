@@ -3,14 +3,61 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kegel_master/core/theme/app_theme.dart';
 import 'package:kegel_master/core/theme/theme_mode_controller.dart';
+import 'package:kegel_master/core/services/notification_service.dart';
+import 'package:kegel_master/features/settings/data/reminder_settings_controller.dart';
+import 'package:kegel_master/features/progress/application/session_history_store.dart';
 
-class KegelMasterApp extends ConsumerWidget {
+class KegelMasterApp extends ConsumerStatefulWidget {
   const KegelMasterApp({super.key, required this.router});
 
   final GoRouter router;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<KegelMasterApp> createState() => _KegelMasterAppState();
+}
+
+class _KegelMasterAppState extends ConsumerState<KegelMasterApp> {
+  @override
+  void initState() {
+    super.initState();
+    ref.read(notificationServiceProvider).registerTapHandler(() {
+      widget.router.go('/home');
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshRemindersOnStartup();
+    });
+  }
+
+  Future<void> _refreshRemindersOnStartup() async {
+    try {
+      final reminderSettings = ref.read(reminderSettingsControllerProvider);
+      if (reminderSettings.isEnabled) {
+        final sessionHistory = ref.read(sessionHistoryStoreProvider);
+        final completedTimes = await sessionHistory.completedEndedAtUtc();
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final completedToday = completedTimes.any((utcTime) {
+          final local = utcTime.toLocal();
+          return local.year == today.year &&
+              local.month == today.month &&
+              local.day == today.day;
+        });
+
+        await ref
+            .read(notificationServiceProvider)
+            .scheduleDailyReminder(
+              reminderSettings.reminderTime,
+              todayCompleted: completedToday,
+            );
+      }
+    } catch (e) {
+      debugPrint('Failed to refresh reminders on startup: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeControllerProvider);
 
     return MaterialApp.router(
@@ -18,7 +65,7 @@ class KegelMasterApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      routerConfig: router,
+      routerConfig: widget.router,
     );
   }
 }

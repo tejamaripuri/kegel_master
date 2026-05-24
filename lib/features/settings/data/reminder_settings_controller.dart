@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kegel_master/core/services/shared_preferences_provider.dart';
 import 'package:kegel_master/core/services/notification_service.dart';
+import 'package:kegel_master/features/progress/application/session_history_store.dart';
 
 const String _isReminderEnabledKey = 'isReminderEnabled';
 const String _reminderHourKey = 'reminderHour';
@@ -41,6 +42,23 @@ class ReminderSettingsController extends Notifier<ReminderSettings> {
     );
   }
 
+  Future<bool> _isCompletedToday() async {
+    try {
+      final sessionHistory = ref.read(sessionHistoryStoreProvider);
+      final completedTimes = await sessionHistory.completedEndedAtUtc();
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      return completedTimes.any((utcTime) {
+        final local = utcTime.toLocal();
+        return local.year == today.year &&
+            local.month == today.month &&
+            local.day == today.day;
+      });
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> setReminderEnabled(bool enabled) async {
     final prefs = ref.read(sharedPreferencesProvider);
     await prefs.setBool(_isReminderEnabledKey, enabled);
@@ -50,7 +68,11 @@ class ReminderSettingsController extends Notifier<ReminderSettings> {
     if (enabled) {
       final granted = await notificationService.requestPermission();
       if (granted) {
-        await notificationService.scheduleDailyReminder(state.reminderTime);
+        final todayCompleted = await _isCompletedToday();
+        await notificationService.scheduleDailyReminder(
+          state.reminderTime,
+          todayCompleted: todayCompleted,
+        );
       } else {
         // Permission denied — revert toggle so the UI reflects reality.
         await prefs.setBool(_isReminderEnabledKey, false);
@@ -69,7 +91,11 @@ class ReminderSettingsController extends Notifier<ReminderSettings> {
 
     if (state.isEnabled) {
       final notificationService = ref.read(notificationServiceProvider);
-      await notificationService.scheduleDailyReminder(time);
+      final todayCompleted = await _isCompletedToday();
+      await notificationService.scheduleDailyReminder(
+        time,
+        todayCompleted: todayCompleted,
+      );
     }
   }
 }

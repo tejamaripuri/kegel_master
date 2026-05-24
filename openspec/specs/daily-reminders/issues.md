@@ -75,8 +75,8 @@ Ensure that tapping a delivered notification properly opens the app and routes t
 - Regardless of whether the app was in the background or terminated, tapping the reminder must securely route the user to the Home screen using GoRouter.
 
 ## Acceptance criteria
-- [ ] Tapping the notification while the app is in the background routes to the Home screen.
-- [ ] Tapping the notification while the app is terminated launches the app and routes to the Home screen.
+- [x] Tapping the notification while the app is in the background routes to the Home screen.
+- [x] Tapping the notification while the app is terminated launches the app and routes to the Home screen.
 
 ## Blocked by
 - Issue 1
@@ -94,8 +94,8 @@ Prevent unnecessary nagging by cancelling today's reminder if the user has alrea
 - Hook into the workout/session completion flow. When a session successfully completes, invoke this new method.
 
 ## Acceptance criteria
-- [ ] Completing a workout session successfully invokes the cancellation logic.
-- [ ] Today's scheduled reminder is cancelled, but tomorrow's remains active (or the daily schedule is maintained effectively).
+- [x] Completing a workout session successfully invokes the cancellation logic.
+- [x] Today's scheduled reminder is cancelled, but tomorrow's remains active (or the daily schedule is maintained effectively).
 
 ## Blocked by
 - Issue 2

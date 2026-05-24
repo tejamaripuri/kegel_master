@@ -5,9 +5,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kegel_master/core/services/shared_preferences_provider.dart';
 import 'package:kegel_master/core/services/notification_service.dart';
 import 'package:kegel_master/features/settings/data/reminder_settings_controller.dart';
+import 'package:kegel_master/features/progress/application/session_history_store.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockNotificationService extends Mock implements NotificationService {}
+class MockSessionHistoryStore extends Mock implements SessionHistoryStore {}
 
 void main() {
   setUpAll(() {
@@ -17,18 +19,22 @@ void main() {
   group('ReminderSettingsController', () {
     late SharedPreferences prefs;
     late MockNotificationService mockNotificationService;
+    late MockSessionHistoryStore mockSessionHistoryStore;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       prefs = await SharedPreferences.getInstance();
       mockNotificationService = MockNotificationService();
+      mockSessionHistoryStore = MockSessionHistoryStore();
       
       when(() => mockNotificationService.requestPermission())
           .thenAnswer((_) async => true);
-      when(() => mockNotificationService.scheduleDailyReminder(any()))
+      when(() => mockNotificationService.scheduleDailyReminder(any(), todayCompleted: any(named: 'todayCompleted')))
           .thenAnswer((_) async {});
       when(() => mockNotificationService.cancelAllReminders())
           .thenAnswer((_) async {});
+      when(() => mockSessionHistoryStore.completedEndedAtUtc())
+          .thenAnswer((_) async => []);
     });
 
     ProviderContainer createContainer() {
@@ -36,6 +42,7 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           notificationServiceProvider.overrideWithValue(mockNotificationService),
+          sessionHistoryStoreProvider.overrideWithValue(mockSessionHistoryStore),
         ],
       );
     }
@@ -64,7 +71,7 @@ void main() {
       expect(state.isEnabled, isTrue);
       expect(prefs.getBool('isReminderEnabled'), isTrue);
       verify(() => mockNotificationService.requestPermission()).called(1);
-      verify(() => mockNotificationService.scheduleDailyReminder(state.reminderTime)).called(1);
+      verify(() => mockNotificationService.scheduleDailyReminder(state.reminderTime, todayCompleted: any(named: 'todayCompleted'))).called(1);
     });
 
     test('toggling OFF updates state, saves to prefs, and cancels reminders', () async {
@@ -92,7 +99,7 @@ void main() {
       expect(state.reminderTime, newTime);
       expect(prefs.getInt('reminderHour'), 21);
       expect(prefs.getInt('reminderMinute'), 0);
-      verify(() => mockNotificationService.scheduleDailyReminder(newTime)).called(1);
+      verify(() => mockNotificationService.scheduleDailyReminder(newTime, todayCompleted: any(named: 'todayCompleted'))).called(1);
     });
 
     test('setReminderTime updates state and saves to prefs, but does not reschedule if disabled', () async {
@@ -108,7 +115,7 @@ void main() {
       expect(state.reminderTime, newTime);
       expect(prefs.getInt('reminderHour'), 21);
       expect(prefs.getInt('reminderMinute'), 0);
-      verifyNever(() => mockNotificationService.scheduleDailyReminder(any()));
+      verifyNever(() => mockNotificationService.scheduleDailyReminder(any(), todayCompleted: any(named: 'todayCompleted')));
     });
   });
 }

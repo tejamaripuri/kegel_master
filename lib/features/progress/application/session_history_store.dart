@@ -1,4 +1,9 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kegel_master/features/progress/domain/session_history_entry.dart';
+
+final sessionHistoryStoreProvider = Provider<SessionHistoryStore>((ref) {
+  throw UnimplementedError('sessionHistoryStoreProvider must be overridden');
+});
 
 /// Persists ended session runs.
 ///

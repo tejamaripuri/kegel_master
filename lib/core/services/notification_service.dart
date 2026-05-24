@@ -16,8 +16,18 @@ final notificationServiceProvider = Provider<NotificationService>((_) {
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin;
+  void Function()? _onTapCallback;
+  bool _pendingTap = false;
 
   NotificationService(this._plugin);
+
+  void registerTapHandler(void Function() callback) {
+    _onTapCallback = callback;
+    if (_pendingTap) {
+      _pendingTap = false;
+      callback();
+    }
+  }
 
   /// Shared notification details used for all reminders.
   static const _reminderDetails = NotificationDetails(
@@ -45,7 +55,29 @@ class NotificationService {
       android: androidInitialize,
       iOS: iosInitialize,
     );
-    await _plugin.initialize(initializationsSettings);
+    await _plugin.initialize(
+      initializationsSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse details) {
+        if (_onTapCallback != null) {
+          _onTapCallback!();
+        } else {
+          _pendingTap = true;
+        }
+      },
+    );
+
+    try {
+      final launchDetails = await _plugin.getNotificationAppLaunchDetails();
+      if (launchDetails != null && launchDetails.didNotificationLaunchApp) {
+        if (_onTapCallback != null) {
+          _onTapCallback!();
+        } else {
+          _pendingTap = true;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error checking launch details: $e');
+    }
   }
 
   Future<bool> isBatteryOptimizationExempted() async {
@@ -119,25 +151,46 @@ class NotificationService {
     return scheduledDate;
   }
 
-  Future<void> scheduleDailyReminder(TimeOfDay time) async {
+  Future<void> scheduleDailyReminder(TimeOfDay time, {bool todayCompleted = false}) async {
     await cancelAllReminders();
 
     final now = tz.TZDateTime.now(tz.local);
+    final int todayWeekday = now.weekday;
 
     for (int weekday = 1; weekday <= 7; weekday++) {
       final scheduledDate = _nextInstanceOfWeekdayAndTime(now, weekday, time);
 
-      await _plugin.zonedSchedule(
-        10 + weekday, // notification ids 11 to 17
-        'Kegel Reminder',
-        'Time to do your exercises!',
-        scheduledDate,
-        _reminderDetails,
-        androidScheduleMode: AndroidScheduleMode.alarmClock,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-      );
+      if (weekday == todayWeekday && todayCompleted) {
+        var nextWeekDate = scheduledDate;
+        if (nextWeekDate.year == now.year &&
+            nextWeekDate.month == now.month &&
+            nextWeekDate.day == now.day) {
+          nextWeekDate = nextWeekDate.add(const Duration(days: 7));
+        }
+
+        await _plugin.zonedSchedule(
+          10 + weekday,
+          'Kegel Reminder',
+          'Time to do your exercises!',
+          nextWeekDate,
+          _reminderDetails,
+          androidScheduleMode: AndroidScheduleMode.alarmClock,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+      } else {
+        await _plugin.zonedSchedule(
+          10 + weekday, // notification ids 11 to 17
+          'Kegel Reminder',
+          'Time to do your exercises!',
+          scheduledDate,
+          _reminderDetails,
+          androidScheduleMode: AndroidScheduleMode.alarmClock,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+      }
     }
   }
 
@@ -147,31 +200,7 @@ class NotificationService {
   /// before invoking this method. [time] is the configured reminder time
   /// (from [ReminderSettings.reminderTime]).
   Future<void> cancelTodayReminder(TimeOfDay time) async {
-    final now = tz.TZDateTime.now(tz.local);
-    final int todayWeekday = now.weekday;
-
-    // Cancel today's notification.
-    await _plugin.cancel(10 + todayWeekday);
-
-    // Reschedule it to next week.
-    var nextWeekDate = _nextInstanceOfWeekdayAndTime(now, todayWeekday, time);
-    if (nextWeekDate.year == now.year &&
-        nextWeekDate.month == now.month &&
-        nextWeekDate.day == now.day) {
-      nextWeekDate = nextWeekDate.add(const Duration(days: 7));
-    }
-
-    await _plugin.zonedSchedule(
-      10 + todayWeekday,
-      'Kegel Reminder',
-      'Time to do your exercises!',
-      nextWeekDate,
-      _reminderDetails,
-      androidScheduleMode: AndroidScheduleMode.alarmClock,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-    );
+    await scheduleDailyReminder(time, todayCompleted: true);
   }
 
   Future<void> cancelAllReminders() async {
