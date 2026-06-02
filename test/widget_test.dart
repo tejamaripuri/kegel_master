@@ -1,9 +1,11 @@
+import 'package:kegel_master/features/learn/data/learn_release_bundle.dart';
 import 'package:kegel_master/features/progress/application/session_history_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:kegel_master/features/onboarding/application/onboarding_gate.dart';
+import 'package:kegel_master/features/onboarding/domain/onboarding_snapshot.dart';
 import 'package:kegel_master/features/onboarding/presentation/onboarding_scope.dart';
 import 'package:kegel_master/features/progress/data/in_memory_progress_stores.dart';
 import 'package:kegel_master/features/progress/presentation/progress_scope.dart';
@@ -15,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kegel_master/app.dart';
 import 'fakes/fake_onboarding_persistence.dart';
 import 'package:kegel_master/core/services/notification_service.dart';
+import 'package:kegel_master/l10n/app_localizations_en.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockNotificationService extends Mock implements NotificationService {}
@@ -27,12 +30,58 @@ Future<GoRouter> _pumpAppWithCompletedOnboarding(WidgetTester tester) async {
   final InMemoryUserPreferencesStore userPreferences =
       InMemoryUserPreferencesStore();
   await userPreferences.ensureSeedRow();
-  
+
   SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
 
   final mockNotificationService = MockNotificationService();
-  when(() => mockNotificationService.registerTapHandler(any())).thenAnswer((_) {});
+  when(
+    () => mockNotificationService.registerTapHandler(any()),
+  ).thenAnswer((_) {});
+  final sessionHistory = InMemorySessionHistoryStore();
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        notificationServiceProvider.overrideWithValue(mockNotificationService),
+        sessionHistoryStoreProvider.overrideWithValue(sessionHistory),
+      ],
+      child: OnboardingScope(
+        gate: gate,
+        child: ProgressScope(
+          sessionHistory: sessionHistory,
+          userPreferences: userPreferences,
+          child: KegelMasterApp(router: router),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+  return router;
+}
+
+Future<GoRouter> _pumpAppWithOnboardingSnapshot(
+  WidgetTester tester,
+  OnboardingSnapshot snapshot,
+) async {
+  final FakeOnboardingPersistence persistence = FakeOnboardingPersistence(
+    initial: snapshot,
+  );
+  final OnboardingGate gate = OnboardingGate(persistence);
+  await gate.load();
+  final GoRouter router = createAppRouter(gate: gate);
+  final InMemoryUserPreferencesStore userPreferences =
+      InMemoryUserPreferencesStore();
+  await userPreferences.ensureSeedRow();
+
+  SharedPreferences.setMockInitialValues({});
+  final prefs = await SharedPreferences.getInstance();
+
+  final mockNotificationService = MockNotificationService();
+  when(
+    () => mockNotificationService.registerTapHandler(any()),
+  ).thenAnswer((_) {});
   final sessionHistory = InMemorySessionHistoryStore();
 
   await tester.pumpWidget(
@@ -58,23 +107,42 @@ Future<GoRouter> _pumpAppWithCompletedOnboarding(WidgetTester tester) async {
 
 void main() {
   group('KegelMasterApp', () {
-    testWidgets('shows NavigationBar and Home content by default', (WidgetTester tester) async {
+    testWidgets('shows NavigationBar and Home content by default', (
+      WidgetTester tester,
+    ) async {
       await _pumpAppWithCompletedOnboarding(tester);
 
       expect(find.byType(NavigationBar), findsOneWidget);
-      expect(find.text('Start a guided session when you are ready.'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Start session'), findsOneWidget);
+      expect(
+        find.text('Start a guided session when you are ready.'),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(FilledButton, 'Start session'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('Learn tab shows learn screen body', (WidgetTester tester) async {
+    testWidgets('Learn tab shows disclaimer and foundation section', (
+      WidgetTester tester,
+    ) async {
+      final AppLocalizationsEn l10n = AppLocalizationsEn();
       await _pumpAppWithCompletedOnboarding(tester);
       await tester.tap(find.byIcon(Icons.menu_book_outlined));
       await tester.pumpAndSettle();
 
-      expect(find.text('Guides and techniques — coming soon.'), findsOneWidget);
+      expect(learnReleaseBundleVersion, '1');
+      expect(find.text(l10n.learnShellDisclaimer), findsOneWidget);
+      expect(find.text(l10n.learnFoundationSectionTitle), findsOneWidget);
+      expect(
+        find.text(l10n.learnFoundationWhatPelvicFloorTitle),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('Progress tab shows progress and achievements sections', (WidgetTester tester) async {
+    testWidgets('Progress tab shows progress and achievements sections', (
+      WidgetTester tester,
+    ) async {
       await _pumpAppWithCompletedOnboarding(tester);
       await tester.tap(find.byIcon(Icons.insights_outlined));
       await tester.pumpAndSettle();
@@ -93,7 +161,9 @@ void main() {
       expect(find.text('Badges and milestones — coming soon.'), findsOneWidget);
     });
 
-    testWidgets('Settings tab shows reset onboarding', (WidgetTester tester) async {
+    testWidgets('Settings tab shows reset onboarding', (
+      WidgetTester tester,
+    ) async {
       await _pumpAppWithCompletedOnboarding(tester);
       await tester.tap(find.byIcon(Icons.settings_outlined));
       await tester.pumpAndSettle();
@@ -101,30 +171,40 @@ void main() {
       expect(find.text('Reset onboarding'), findsOneWidget);
     });
 
-    testWidgets('switching back to Home shows home body again', (WidgetTester tester) async {
+    testWidgets('switching back to Home shows home body again', (
+      WidgetTester tester,
+    ) async {
       await _pumpAppWithCompletedOnboarding(tester);
       await tester.tap(find.byIcon(Icons.menu_book_outlined));
       await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.home_outlined));
       await tester.pumpAndSettle();
 
-      expect(find.text('Start a guided session when you are ready.'), findsOneWidget);
+      expect(
+        find.text('Start a guided session when you are ready.'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('Start session pushes full-screen session without NavigationBar', (WidgetTester tester) async {
-      await _pumpAppWithCompletedOnboarding(tester);
-      await tester.pumpAndSettle();
+    testWidgets(
+      'Start session pushes full-screen session without NavigationBar',
+      (WidgetTester tester) async {
+        await _pumpAppWithCompletedOnboarding(tester);
+        await tester.pumpAndSettle();
 
-      expect(find.byType(NavigationBar), findsOneWidget);
+        expect(find.byType(NavigationBar), findsOneWidget);
 
-      await tester.tap(find.widgetWithText(FilledButton, 'Start session'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(FilledButton, 'Start session'));
+        await tester.pumpAndSettle();
 
-      expect(find.byType(NavigationBar), findsNothing);
-      expect(find.text('Session'), findsOneWidget);
-    });
+        expect(find.byType(NavigationBar), findsNothing);
+        expect(find.text('Session'), findsOneWidget);
+      },
+    );
 
-    testWidgets('system back on active session shows end confirmation', (WidgetTester tester) async {
+    testWidgets('system back on active session shows end confirmation', (
+      WidgetTester tester,
+    ) async {
       await _pumpAppWithCompletedOnboarding(tester);
 
       await tester.tap(find.widgetWithText(FilledButton, 'Start session'));
@@ -141,27 +221,76 @@ void main() {
       );
     });
 
-    testWidgets('router.go shows Learn tab without tapping NavigationBar', (WidgetTester tester) async {
+    testWidgets('router.go shows Learn tab without tapping NavigationBar', (
+      WidgetTester tester,
+    ) async {
+      final AppLocalizationsEn l10n = AppLocalizationsEn();
       final GoRouter router = await _pumpAppWithCompletedOnboarding(tester);
 
-      expect(find.text('Start a guided session when you are ready.'), findsOneWidget);
+      expect(
+        find.text('Start a guided session when you are ready.'),
+        findsOneWidget,
+      );
 
       router.go('/learn');
       await tester.pumpAndSettle();
 
-      expect(find.text('Guides and techniques — coming soon.'), findsOneWidget);
+      expect(find.text(l10n.learnShellDisclaimer), findsOneWidget);
+      expect(
+        find.text(l10n.learnFoundationWhatPelvicFloorTitle),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('router.go to / redirects to Home content', (WidgetTester tester) async {
+    testWidgets(
+      'Learn with catheter shows banner disclaimer and foundation item',
+      (WidgetTester tester) async {
+        final AppLocalizationsEn l10n = AppLocalizationsEn();
+        final OnboardingSnapshot base =
+            FakeOnboardingPersistence.completedSnapshot;
+        await _pumpAppWithOnboardingSnapshot(
+          tester,
+          OnboardingSnapshot(
+            onboardingComplete: true,
+            catheterActive: true,
+            disclaimerAcceptedAt: base.disclaimerAcceptedAt,
+            profile: base.profile,
+          ),
+        );
+
+        expect(find.text(l10n.learnCatheterBannerBody), findsOneWidget);
+        expect(find.text(l10n.learnShellDisclaimer), findsOneWidget);
+        expect(
+          find.text(l10n.learnFoundationWhatPelvicFloorTitle),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text(l10n.learnFoundationWhatPelvicFloorTitle));
+        await tester.pumpAndSettle();
+        expect(
+          find.textContaining('These muscles help support'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('router.go to / redirects to Home content', (
+      WidgetTester tester,
+    ) async {
       final GoRouter router = await _pumpAppWithCompletedOnboarding(tester);
 
       router.go('/');
       await tester.pumpAndSettle();
 
-      expect(find.text('Start a guided session when you are ready.'), findsOneWidget);
+      expect(
+        find.text('Start a guided session when you are ready.'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('router.go(/session) opens session without NavigationBar', (WidgetTester tester) async {
+    testWidgets('router.go(/session) opens session without NavigationBar', (
+      WidgetTester tester,
+    ) async {
       final GoRouter router = await _pumpAppWithCompletedOnboarding(tester);
 
       router.go('/session');
@@ -171,21 +300,29 @@ void main() {
       expect(find.byType(NavigationBar), findsNothing);
     });
 
-    testWidgets('unknown location shows not found and Go home navigates to Home', (WidgetTester tester) async {
-      final GoRouter router = await _pumpAppWithCompletedOnboarding(tester);
+    testWidgets(
+      'unknown location shows not found and Go home navigates to Home',
+      (WidgetTester tester) async {
+        final GoRouter router = await _pumpAppWithCompletedOnboarding(tester);
 
-      router.go('/this-route-does-not-exist');
-      await tester.pumpAndSettle();
+        router.go('/this-route-does-not-exist');
+        await tester.pumpAndSettle();
 
-      expect(find.text('No route for this location.'), findsOneWidget);
+        expect(find.text('No route for this location.'), findsOneWidget);
 
-      await tester.tap(find.text('Go home'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Go home'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Start a guided session when you are ready.'), findsOneWidget);
-    });
+        expect(
+          find.text('Start a guided session when you are ready.'),
+          findsOneWidget,
+        );
+      },
+    );
 
-    testWidgets('notification tap routes to Home screen', (WidgetTester tester) async {
+    testWidgets('notification tap routes to Home screen', (
+      WidgetTester tester,
+    ) async {
       final FakeOnboardingPersistence persistence = FakeOnboardingPersistence();
       final OnboardingGate gate = OnboardingGate(persistence);
       await gate.load();
@@ -193,13 +330,16 @@ void main() {
       final InMemoryUserPreferencesStore userPreferences =
           InMemoryUserPreferencesStore();
       await userPreferences.ensureSeedRow();
-      
+
       final prefs = await SharedPreferences.getInstance();
       final mockNotificationService = MockNotificationService();
-      
+
       void Function()? registeredCallback;
-      when(() => mockNotificationService.registerTapHandler(any())).thenAnswer((invocation) {
-        registeredCallback = invocation.positionalArguments[0] as void Function();
+      when(() => mockNotificationService.registerTapHandler(any())).thenAnswer((
+        invocation,
+      ) {
+        registeredCallback =
+            invocation.positionalArguments[0] as void Function();
       });
       final sessionHistory = InMemorySessionHistoryStore();
 
@@ -207,7 +347,9 @@ void main() {
         ProviderScope(
           overrides: [
             sharedPreferencesProvider.overrideWithValue(prefs),
-            notificationServiceProvider.overrideWithValue(mockNotificationService),
+            notificationServiceProvider.overrideWithValue(
+              mockNotificationService,
+            ),
             sessionHistoryStoreProvider.overrideWithValue(sessionHistory),
           ],
           child: OnboardingScope(
@@ -233,7 +375,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should be back at Home screen
-      expect(find.text('Start a guided session when you are ready.'), findsOneWidget);
+      expect(
+        find.text('Start a guided session when you are ready.'),
+        findsOneWidget,
+      );
     });
   });
 }

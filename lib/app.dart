@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kegel_master/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'package:kegel_master/core/theme/app_theme.dart';
 import 'package:kegel_master/core/theme/theme_mode_controller.dart';
@@ -16,7 +17,8 @@ class KegelMasterApp extends ConsumerStatefulWidget {
   ConsumerState<KegelMasterApp> createState() => _KegelMasterAppState();
 }
 
-class _KegelMasterAppState extends ConsumerState<KegelMasterApp> with WidgetsBindingObserver {
+class _KegelMasterAppState extends ConsumerState<KegelMasterApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -80,6 +82,8 @@ class _KegelMasterAppState extends ConsumerState<KegelMasterApp> with WidgetsBin
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       routerConfig: widget.router,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
     );
   }
 }
