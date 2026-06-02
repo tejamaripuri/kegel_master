@@ -1,32 +1,74 @@
 import 'package:flutter/material.dart';
+import 'package:kegel_master/features/learn/data/learn_release_bundle.dart';
 import 'package:kegel_master/features/onboarding/presentation/onboarding_scope.dart';
+import 'package:kegel_master/l10n/app_localizations.dart';
 
 class LearnScreen extends StatelessWidget {
   const LearnScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final bool catheter =
-        OnboardingScope.of(context).snapshot.catheterActive;
+    final AppLocalizations l10n = AppLocalizations.of(context)!;
+    final bool catheter = OnboardingScope.of(context).snapshot.catheterActive;
+    final ColorScheme colors = Theme.of(context).colorScheme;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Learn')),
+      appBar: AppBar(title: Text(l10n.learnAppBarTitle)),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (catheter)
             ColoredBox(
-              color: Theme.of(context).colorScheme.errorContainer,
-              child: const Padding(
-                padding: EdgeInsets.all(12),
+              color: colors.errorContainer,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
                 child: Text(
-                  'Pelvic floor exercises are suspended while you use a catheter. '
-                  'Educational content only — follow your care team.',
+                  l10n.learnCatheterBannerBody,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colors.onErrorContainer,
+                  ),
                 ),
               ),
             ),
-          const Expanded(
-            child: Center(
-              child: Text('Guides and techniques — coming soon.'),
+          Material(
+            color: colors.surfaceContainerHighest,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Text(
+                l10n.learnShellDisclaimer,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: colors.onSurfaceVariant),
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              children: <Widget>[
+                Text(
+                  l10n.learnFoundationSectionTitle,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 8),
+                ...learnFoundationItemsV1.map(
+                  (LearnFoundationId id) => Card(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: ExpansionTile(
+                      title: Text(id.title(l10n)),
+                      children: <Widget>[
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(id.body(l10n)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

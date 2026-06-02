@@ -45,12 +45,20 @@ class _TrainingCalendarCardState extends State<TrainingCalendarCard> {
   Widget build(BuildContext context) {
     final first = DateTime(2020, 1, 1);
     final last = DateTime(2035, 12, 31);
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final dowStyle = TextStyle(color: onSurface);
+    final weekendDayStyle = TextStyle(color: onSurface, fontSize: 16);
 
     return TableCalendar<Object>(
       firstDay: first,
       lastDay: last,
       focusedDay: _focusedDay,
       eventLoader: _eventsForDay,
+      calendarStyle: CalendarStyle(weekendTextStyle: weekendDayStyle),
+      daysOfWeekStyle: DaysOfWeekStyle(
+        weekdayStyle: dowStyle,
+        weekendStyle: dowStyle,
+      ),
       startingDayOfWeek: StartingDayOfWeek.monday,
       calendarFormat: CalendarFormat.month,
       availableCalendarFormats: const {CalendarFormat.month: 'Month'},
