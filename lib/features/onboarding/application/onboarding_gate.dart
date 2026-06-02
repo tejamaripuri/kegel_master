@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:kegel_master/features/onboarding/data/onboarding_persistence.dart';
 import 'package:kegel_master/features/onboarding/domain/onboarding_profile.dart';
 import 'package:kegel_master/features/onboarding/domain/onboarding_snapshot.dart';
+import 'package:kegel_master/features/learn/domain/learn_profile_signals.dart';
 import 'package:kegel_master/features/onboarding/domain/session_prescription.dart';
 import 'package:kegel_master/features/session/domain/session_config.dart';
 
@@ -54,5 +55,16 @@ class OnboardingGate extends ChangeNotifier {
       return null;
     }
     return sessionPrescriptionFromProfile(p);
+  }
+
+  LearnProfileSignals? learnProfileSignalsOrNull() {
+    final OnboardingProfile? p = _snapshot.profile;
+    if (p == null) {
+      return null;
+    }
+    return LearnProfileSignals.fromProfile(
+      profile: p,
+      catheterActiveSnapshot: _snapshot.catheterActive,
+    );
   }
 }
