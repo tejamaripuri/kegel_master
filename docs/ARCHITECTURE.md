@@ -73,3 +73,11 @@ flowchart TD
   shellNode --> progressNode
   shellNode --> settingsNode
 ```
+
+## Local notifications and snooze
+
+Daily reminders are scheduled in [`lib/core/services/notification_service.dart`](../lib/core/services/notification_service.dart). Per weekday uses notification ids **11–17**; a one-off **snooze** uses id **99** (one hour later).
+
+- **Snooze action** (`snooze_action`): On Android the action uses `showsUserInterface: false` and `cancelNotification: true` so snooze runs without opening the app and the tray entry is cleared. That path requires `com.dexterous.flutterlocalnotifications.ActionBroadcastReceiver` in [`android/app/src/main/AndroidManifest.xml`](../android/app/src/main/AndroidManifest.xml) (see flutter_local_notifications setup). On iOS the category action is a plain (non-foreground) action for the same behavior. When the app is not in the foreground UI, `notificationTapBackground` can run on a background isolate and calls the same scheduling helper as the foreground path.
+- **After snooze:** Cancelling the firing weekday alarm can drop that slot until weekly alarms are rebuilt. [`lib/app.dart`](../lib/app.dart) refreshes `scheduleDailyReminder` on startup and again when the app lifecycle returns to **resumed**, so weekly reminders are restored without requiring a cold start.
+- **Swipe dismiss:** Dismissing a notification from the system shade does **not** schedule a follow-up snooze; only the in-notification **Snooze (1 hour)** action does.

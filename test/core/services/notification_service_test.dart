@@ -3,8 +3,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
 import 'package:clock/clock.dart';
 import 'package:kegel_master/core/services/notification_service.dart';
+
+/// Wall clock in [tz.local] as a `DateTime` for APIs that combine it with
+/// `tz.TZDateTime.from(..., tz.local)` (same role as `DateTime.now()` in app code).
+DateTime localWallDateTime(int year, int month, int day, int hour, int minute) =>
+    DateTime.fromMillisecondsSinceEpoch(
+      tz.TZDateTime(tz.local, year, month, day, hour, minute).millisecondsSinceEpoch,
+    );
 
 class MockFlutterLocalNotificationsPlugin implements FlutterLocalNotificationsPlugin {
   bool requestPermissionCalled = false;
@@ -100,6 +108,7 @@ void main() {
 
     setUp(() {
       tz_data.initializeTimeZones();
+      tz.setLocalLocation(tz.UTC);
       mockPlugin = MockFlutterLocalNotificationsPlugin();
       notificationService = NotificationService(mockPlugin);
     });
@@ -149,7 +158,7 @@ void main() {
 
     test('cancelTodayReminder with time in future schedules for next week', () async {
       // Sunday May 24, 2026 15:30. Sunday is weekday 7.
-      final fixedTime = DateTime.utc(2026, 5, 24, 15, 30);
+      final fixedTime = localWallDateTime(2026, 5, 24, 15, 30);
       await withClock(Clock.fixed(fixedTime), () async {
         await notificationService.cancelTodayReminder(
           const TimeOfDay(hour: 15, minute: 35),
@@ -170,7 +179,7 @@ void main() {
 
     test('cancelTodayReminder with time in past schedules for next week', () async {
       // Sunday May 24, 2026 15:30. Sunday is weekday 7.
-      final fixedTime = DateTime.utc(2026, 5, 24, 15, 30);
+      final fixedTime = localWallDateTime(2026, 5, 24, 15, 30);
       await withClock(Clock.fixed(fixedTime), () async {
         await notificationService.cancelTodayReminder(
           const TimeOfDay(hour: 15, minute: 25),
@@ -228,16 +237,39 @@ void main() {
       expect(tapCallbackCalled, isTrue);
     });
 
-    test('snoozeReminder schedules a notification 1 hour in the future with ID 99', () async {
-      final fixedTime = DateTime.utc(2026, 5, 24, 15, 30);
+    test('foreground snooze action cancels 99 and source id then schedules 99', () async {
+      await notificationService.initialize();
+
+      mockPlugin.canceledIds.clear();
+      mockPlugin.cancelCalled = false;
+      mockPlugin.zonedScheduleCalled = false;
+
+      mockPlugin.onNotificationResponse?.call(const NotificationResponse(
+        id: 12,
+        notificationResponseType: NotificationResponseType.selectedNotification,
+        actionId: 'snooze_action',
+        payload: '',
+      ));
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(mockPlugin.canceledIds, equals([99, 12]));
+      expect(mockPlugin.zonedScheduleCalled, isTrue);
+      expect(mockPlugin.lastScheduledId, equals(99));
+    });
+
+    test('snoozeReminder clears id 99 then schedules one hour ahead', () async {
+      final fixedTime = localWallDateTime(2026, 5, 24, 15, 30);
       await withClock(Clock.fixed(fixedTime), () async {
         await notificationService.snoozeReminder(now: fixedTime);
 
+        expect(mockPlugin.cancelCalled, isTrue);
+        expect(mockPlugin.canceledIds, contains(NotificationService.snoozeReminderId));
         expect(mockPlugin.zonedScheduleCalled, isTrue);
         expect(mockPlugin.lastScheduledId, equals(99));
         expect(mockPlugin.lastScheduledTitle, equals('Kegel Reminder'));
         expect(mockPlugin.lastScheduledBody, equals('Time to do your exercises!'));
-        
+
         final scheduledDate = mockPlugin.lastScheduledDate as DateTime;
         expect(scheduledDate.year, equals(2026));
         expect(scheduledDate.month, equals(5));
@@ -254,9 +286,9 @@ void main() {
       expect(mockPlugin.onNotificationBackgroundResponse, equals(notificationTapBackground));
     });
 
-    test('notificationTapBackground background callback schedules snooze and cancels active reminder', () async {
+    test('notificationTapBackground cancels snooze id then source id and schedules 99', () async {
       debugNotificationPluginOverride = mockPlugin;
-      
+
       await notificationTapBackground(const NotificationResponse(
         id: 12,
         notificationResponseType: NotificationResponseType.selectedNotification,
@@ -265,7 +297,7 @@ void main() {
       ));
 
       expect(mockPlugin.cancelCalled, isTrue);
-      expect(mockPlugin.lastCanceledId, equals(12));
+      expect(mockPlugin.canceledIds, equals([99, 12]));
       expect(mockPlugin.zonedScheduleCalled, isTrue);
       expect(mockPlugin.lastScheduledId, equals(99));
     });
@@ -273,7 +305,7 @@ void main() {
     test('cancelTodayReminder cancels snooze notification ID 99', () async {
       await notificationService.cancelTodayReminder(
         const TimeOfDay(hour: 8, minute: 0),
-        now: DateTime.utc(2026, 5, 24, 15, 30),
+        now: localWallDateTime(2026, 5, 24, 15, 30),
       );
 
       expect(mockPlugin.cancelCalled, isTrue);
@@ -281,7 +313,7 @@ void main() {
     });
 
     test('scheduleDailyReminder does not cancel snooze reminder', () async {
-      await notificationService.snoozeReminder(now: DateTime.utc(2026, 5, 24, 15, 30));
+      await notificationService.snoozeReminder(now: localWallDateTime(2026, 5, 24, 15, 30));
       // Reset tracking
       mockPlugin.cancelCalled = false;
       mockPlugin.canceledIds.clear();

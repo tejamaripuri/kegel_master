@@ -16,10 +16,11 @@ class KegelMasterApp extends ConsumerStatefulWidget {
   ConsumerState<KegelMasterApp> createState() => _KegelMasterAppState();
 }
 
-class _KegelMasterAppState extends ConsumerState<KegelMasterApp> {
+class _KegelMasterAppState extends ConsumerState<KegelMasterApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     ref.read(notificationServiceProvider).registerTapHandler(() {
       widget.router.go('/home');
     });
@@ -27,6 +28,19 @@ class _KegelMasterAppState extends ConsumerState<KegelMasterApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshRemindersOnStartup();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshRemindersOnStartup();
+    }
   }
 
   Future<void> _refreshRemindersOnStartup() async {
