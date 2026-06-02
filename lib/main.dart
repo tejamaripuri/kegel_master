@@ -19,13 +19,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kegel_master/core/services/shared_preferences_provider.dart';
 import 'package:kegel_master/core/services/notification_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_timezone/flutter_timezone.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  tz.initializeTimeZones();
+  tz_data.initializeTimeZones();
   final timeZoneInfo = await FlutterTimezone.getLocalTimezone();
   tz.setLocalLocation(tz.getLocation(timeZoneInfo.identifier));
   await applyAndroidSqliteWorkaroundIfNeeded();

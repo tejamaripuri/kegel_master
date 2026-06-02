@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +6,8 @@ import 'package:flutter/services.dart';
 
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 
 /// Always override this provider in main() and in tests via overrideWithValue.
@@ -29,6 +32,8 @@ class NotificationService {
     }
   }
 
+  static const int snoozeReminderId = 99;
+
   /// Shared notification details used for all reminders.
   static const _reminderDetails = NotificationDetails(
     android: AndroidNotificationDetails(
@@ -38,47 +43,118 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.high,
       fullScreenIntent: true,
+      actions: <AndroidNotificationAction>[
+        AndroidNotificationAction(
+          'snooze_action',
+          'Snooze (1 hour)',
+          showsUserInterface: false,
+          cancelNotification: true,
+        ),
+      ],
     ),
-    iOS: DarwinNotificationDetails(),
+    iOS: DarwinNotificationDetails(
+      categoryIdentifier: 'reminder_category',
+    ),
   );
+
+  /// Clears any pending snooze, optionally cancels [sourceNotificationId], then schedules one shot +1 hour.
+  static Future<void> applySnoozeWithPlugin(
+    FlutterLocalNotificationsPlugin plugin, {
+    int? sourceNotificationId,
+    DateTime? now,
+  }) async {
+    await plugin.cancel(snoozeReminderId);
+    if (sourceNotificationId != null) {
+      await plugin.cancel(sourceNotificationId);
+    }
+    final currentDateTime = now ?? DateTime.now();
+    final tzNow = tz.TZDateTime.from(currentDateTime, tz.local);
+    final snoozeTime = tzNow.add(const Duration(hours: 1));
+
+    await plugin.zonedSchedule(
+      snoozeReminderId,
+      'Kegel Reminder',
+      'Time to do your exercises!',
+      snoozeTime,
+      _reminderDetails,
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+    );
+  }
+
+  Future<void> _applySnooze({int? sourceNotificationId, DateTime? now}) =>
+      applySnoozeWithPlugin(
+        _plugin,
+        sourceNotificationId: sourceNotificationId,
+        now: now,
+      );
 
   Future<void> initialize() async {
     const androidInitialize = AndroidInitializationSettings(
       '@drawable/ic_notification',
     );
-    const iosInitialize = DarwinInitializationSettings(
+    final iosInitialize = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
+      notificationCategories: [
+        DarwinNotificationCategory(
+          'reminder_category',
+          actions: [
+            DarwinNotificationAction.plain(
+              'snooze_action',
+              'Snooze (1 hour)',
+            ),
+          ],
+        ),
+      ],
     );
-    const initializationsSettings = InitializationSettings(
+    final initializationsSettings = InitializationSettings(
       android: androidInitialize,
       iOS: iosInitialize,
     );
     await _plugin.initialize(
       initializationsSettings,
       onDidReceiveNotificationResponse: (NotificationResponse details) {
-        if (_onTapCallback != null) {
-          _onTapCallback!();
+        if (details.actionId == 'snooze_action') {
+          unawaited(_applySnooze(sourceNotificationId: details.id));
         } else {
-          _pendingTap = true;
+          if (_onTapCallback != null) {
+            _onTapCallback!();
+          } else {
+            _pendingTap = true;
+          }
         }
       },
+      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
 
     try {
       final launchDetails = await _plugin.getNotificationAppLaunchDetails();
       if (launchDetails != null && launchDetails.didNotificationLaunchApp) {
-        if (_onTapCallback != null) {
-          _onTapCallback!();
+        final details = launchDetails.notificationResponse;
+        if (details != null && details.actionId == 'snooze_action') {
+          await _applySnooze(sourceNotificationId: details.id);
         } else {
-          _pendingTap = true;
+          if (_onTapCallback != null) {
+            _onTapCallback!();
+          } else {
+            _pendingTap = true;
+          }
         }
       }
     } catch (e) {
       debugPrint('Error checking launch details: $e');
     }
   }
+
+  Future<void> snoozeReminder({DateTime? now, int? sourceNotificationId}) =>
+      applySnoozeWithPlugin(
+        _plugin,
+        sourceNotificationId: sourceNotificationId,
+        now: now,
+      );
 
   Future<bool> isBatteryOptimizationExempted() async {
     if (!Platform.isAndroid) return true;
@@ -151,20 +227,22 @@ class NotificationService {
     return scheduledDate;
   }
 
-  Future<void> scheduleDailyReminder(TimeOfDay time, {bool todayCompleted = false}) async {
-    await cancelAllReminders();
+  Future<void> scheduleDailyReminder(TimeOfDay time, {bool todayCompleted = false, DateTime? now}) async {
+    for (int weekday = 1; weekday <= 7; weekday++) {
+      await _plugin.cancel(10 + weekday);
+    }
 
-    final now = tz.TZDateTime.now(tz.local);
-    final int todayWeekday = now.weekday;
+    final tzNow = tz.TZDateTime.from(now ?? DateTime.now(), tz.local);
+    final int todayWeekday = tzNow.weekday;
 
     for (int weekday = 1; weekday <= 7; weekday++) {
-      final scheduledDate = _nextInstanceOfWeekdayAndTime(now, weekday, time);
+      final scheduledDate = _nextInstanceOfWeekdayAndTime(tzNow, weekday, time);
 
       if (weekday == todayWeekday && todayCompleted) {
         var nextWeekDate = scheduledDate;
-        if (nextWeekDate.year == now.year &&
-            nextWeekDate.month == now.month &&
-            nextWeekDate.day == now.day) {
+        if (nextWeekDate.year == tzNow.year &&
+            nextWeekDate.month == tzNow.month &&
+            nextWeekDate.day == tzNow.day) {
           nextWeekDate = nextWeekDate.add(const Duration(days: 7));
         }
 
@@ -199,11 +277,33 @@ class NotificationService {
   /// The caller is responsible for checking whether reminders are enabled
   /// before invoking this method. [time] is the configured reminder time
   /// (from [ReminderSettings.reminderTime]).
-  Future<void> cancelTodayReminder(TimeOfDay time) async {
-    await scheduleDailyReminder(time, todayCompleted: true);
+  Future<void> cancelTodayReminder(TimeOfDay time, {DateTime? now}) async {
+    await scheduleDailyReminder(time, todayCompleted: true, now: now);
+    await _plugin.cancel(snoozeReminderId);
   }
 
   Future<void> cancelAllReminders() async {
     await _plugin.cancelAll();
+  }
+}
+
+@visibleForTesting
+FlutterLocalNotificationsPlugin? debugNotificationPluginOverride;
+
+@pragma('vm:entry-point')
+Future<void> notificationTapBackground(NotificationResponse details) async {
+  if (details.actionId == 'snooze_action') {
+    WidgetsFlutterBinding.ensureInitialized();
+    tz_data.initializeTimeZones();
+    try {
+      final timeZoneInfo = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timeZoneInfo.identifier));
+    } catch (_) {}
+
+    final plugin = debugNotificationPluginOverride ?? FlutterLocalNotificationsPlugin();
+    await NotificationService.applySnoozeWithPlugin(
+      plugin,
+      sourceNotificationId: details.id,
+    );
   }
 }
