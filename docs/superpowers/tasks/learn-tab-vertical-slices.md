@@ -18,10 +18,10 @@ Preserve existing **Active catheter** educational banner behavior on this surfac
 
 ### Acceptance criteria
 
-- [ ] `LearnScreen` (or equivalent) shows disclaimer + scroll body; foundation section is real content, not a single “coming soon” for that block.
-- [ ] All new user-visible strings go through generated l10n.
-- [ ] Foundation cards respect **Learn educational framing** (qualitative copy; no false-precision prevalence claims).
-- [ ] Widget and/or unit coverage proves disclaimer + at least one foundation item render with a non-default profile wired through the same scope pattern the app uses (e.g. `pumpWidget` + `OnboardingScope`).
+- [x] `LearnScreen` (or equivalent) shows disclaimer + scroll body; foundation section is real content, not a single “coming soon” for that block.
+- [x] All new user-visible strings go through generated l10n.
+- [x] Foundation cards respect **Learn educational framing** (qualitative copy; no false-precision prevalence claims).
+- [x] Widget and/or unit coverage proves disclaimer + at least one foundation item render with a non-default profile wired through the same scope pattern the app uses (e.g. `pumpWidget` + `OnboardingScope`).
 
 ---
 
@@ -35,9 +35,9 @@ From **`OnboardingProfile`** (symptoms, clinical history, gender, primary goal �
 
 ### Acceptance criteria
 
-- [ ] Documented mapping matches spec table (pivot trigger, tab precedence).
-- [ ] Unit tests cover representative combinations (urge-only, pivot-only, both, neither, non-binary gender for anatomy default).
-- [ ] Signals reachable from the same architectural path Learn will use (e.g. scope / provider), without hard-coding UI in this task.
+- [x] Documented mapping matches spec table (pivot trigger, tab precedence).
+- [x] Unit tests cover representative combinations (urge-only, pivot-only, both, neither, non-binary gender for anatomy default).
+- [x] Signals reachable from the same architectural path Learn will use (e.g. scope / provider), without hard-coding UI in this task.
 
 ---
 

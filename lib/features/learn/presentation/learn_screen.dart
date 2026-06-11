@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kegel_master/features/learn/data/learn_release_bundle.dart';
+import 'package:kegel_master/features/learn/domain/learn_profile_signals.dart';
 import 'package:kegel_master/features/onboarding/presentation/onboarding_scope.dart';
 import 'package:kegel_master/l10n/app_localizations.dart';
 
@@ -9,7 +10,10 @@ class LearnScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = AppLocalizations.of(context)!;
-    final bool catheter = OnboardingScope.of(context).snapshot.catheterActive;
+    final gate = OnboardingScope.of(context);
+    final LearnProfileSignals? signals = gate.learnProfileSignalsOrNull();
+    final bool catheter =
+        signals?.hasActiveCatheter ?? gate.snapshot.catheterActive;
     final ColorScheme colors = Theme.of(context).colorScheme;
 
     return Scaffold(
