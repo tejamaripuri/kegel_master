@@ -51,10 +51,10 @@ Add the **Canonical Learn order** “how-to” block: **Anatomy track** selectio
 
 ### Acceptance criteria
 
-- [ ] Section appears in fixed order after foundation.
-- [ ] No “female/male guide” framing; vocabulary matches CONTEXT.
-- [ ] Non-binary and override paths are usable and not mislabeled.
-- [ ] Privacy expansion behavior covered by widget test or clear manual QA notes in PR.
+- [x] Section appears in fixed order after foundation.
+- [x] No “female/male guide” framing; vocabulary matches CONTEXT.
+- [x] Non-binary and override paths are usable and not mislabeled.
+- [x] Privacy expansion behavior covered by widget test or clear manual QA notes in PR.
 
 ---
 
