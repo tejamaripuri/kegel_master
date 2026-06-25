@@ -225,6 +225,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'With clean hands, you can place one finger at the vaginal opening while you contract. You should feel a gentle inward lift, not a painful squeeze. Stop if you feel pain.'**
   String get learnAnatomyFemaleTypicalPrivacyBody;
+
+  /// No description provided for @learnDosDontsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Dos and don\'ts'**
+  String get learnDosDontsSectionTitle;
+
+  /// No description provided for @learnDosDontsSectionIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Simple habits that keep training safer and more effective.'**
+  String get learnDosDontsSectionIntro;
+
+  /// No description provided for @learnDosDontsDoSubgroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Do'**
+  String get learnDosDontsDoSubgroupTitle;
+
+  /// No description provided for @learnDosDontsDontSubgroupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t'**
+  String get learnDosDontsDontSubgroupTitle;
+
+  /// No description provided for @learnDosDontsReleaseBetweenRepsText.
+  ///
+  /// In en, this message translates to:
+  /// **'Let the pelvic floor fully release between reps. Muscles should not stay braced after each squeeze.'**
+  String get learnDosDontsReleaseBetweenRepsText;
+
+  /// No description provided for @learnDosDontsBreatheNormallyText.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep breathing normally while you contract and release. Do not hold your breath to squeeze harder.'**
+  String get learnDosDontsBreatheNormallyText;
+
+  /// No description provided for @learnDosDontsStartShortSetsText.
+  ///
+  /// In en, this message translates to:
+  /// **'Start with short, easy sets and add volume only when form and comfort stay steady.'**
+  String get learnDosDontsStartShortSetsText;
+
+  /// No description provided for @learnDosDontsStopOnFlareText.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop or simplify when symptoms flare. A lighter session today beats pushing through and feeling worse tomorrow.'**
+  String get learnDosDontsStopOnFlareText;
+
+  /// No description provided for @learnDosDontsNoPainThroughText.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not push through sharp, burning, or worsening pain. Stop and get clinician guidance if pain keeps returning.'**
+  String get learnDosDontsNoPainThroughText;
+
+  /// No description provided for @learnDosDontsNoCompensateText.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not squeeze your glutes, inner thighs, or belly to fake a stronger lift. That pattern often makes symptoms worse.'**
+  String get learnDosDontsNoCompensateText;
+
+  /// No description provided for @learnDosDontsNoCatheterTrainText.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not use this app for pelvic floor exercise while a catheter is in place. Follow your care team\'s instructions instead.'**
+  String get learnDosDontsNoCatheterTrainText;
+
+  /// No description provided for @learnDosDontsNoSubstituteClinicianText.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not treat this app as a substitute for professional advice when you have new pain, bleeding, fever, or sudden control changes.'**
+  String get learnDosDontsNoSubstituteClinicianText;
 }
 
 class _AppLocalizationsDelegate

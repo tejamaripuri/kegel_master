@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kegel_master/features/learn/data/learn_release_bundle.dart';
 import 'package:kegel_master/features/learn/domain/learn_profile_signals.dart';
+import 'package:kegel_master/features/learn/presentation/learn_dos_donts_section.dart';
 import 'package:kegel_master/features/learn/presentation/learn_anatomy_track_section.dart';
 import 'package:kegel_master/features/onboarding/presentation/onboarding_scope.dart';
 import 'package:kegel_master/l10n/app_localizations.dart';
@@ -74,6 +75,7 @@ class LearnScreen extends StatelessWidget {
                   ),
                 ),
                 const LearnAnatomyTrackSection(),
+                const LearnDosDontsSection(),
               ],
             ),
           ),

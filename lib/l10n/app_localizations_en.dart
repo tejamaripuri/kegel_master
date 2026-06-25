@@ -89,4 +89,49 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get learnAnatomyFemaleTypicalPrivacyBody =>
       'With clean hands, you can place one finger at the vaginal opening while you contract. You should feel a gentle inward lift, not a painful squeeze. Stop if you feel pain.';
+
+  @override
+  String get learnDosDontsSectionTitle => 'Dos and don\'ts';
+
+  @override
+  String get learnDosDontsSectionIntro =>
+      'Simple habits that keep training safer and more effective.';
+
+  @override
+  String get learnDosDontsDoSubgroupTitle => 'Do';
+
+  @override
+  String get learnDosDontsDontSubgroupTitle => 'Don\'t';
+
+  @override
+  String get learnDosDontsReleaseBetweenRepsText =>
+      'Let the pelvic floor fully release between reps. Muscles should not stay braced after each squeeze.';
+
+  @override
+  String get learnDosDontsBreatheNormallyText =>
+      'Keep breathing normally while you contract and release. Do not hold your breath to squeeze harder.';
+
+  @override
+  String get learnDosDontsStartShortSetsText =>
+      'Start with short, easy sets and add volume only when form and comfort stay steady.';
+
+  @override
+  String get learnDosDontsStopOnFlareText =>
+      'Stop or simplify when symptoms flare. A lighter session today beats pushing through and feeling worse tomorrow.';
+
+  @override
+  String get learnDosDontsNoPainThroughText =>
+      'Do not push through sharp, burning, or worsening pain. Stop and get clinician guidance if pain keeps returning.';
+
+  @override
+  String get learnDosDontsNoCompensateText =>
+      'Do not squeeze your glutes, inner thighs, or belly to fake a stronger lift. That pattern often makes symptoms worse.';
+
+  @override
+  String get learnDosDontsNoCatheterTrainText =>
+      'Do not use this app for pelvic floor exercise while a catheter is in place. Follow your care team\'s instructions instead.';
+
+  @override
+  String get learnDosDontsNoSubstituteClinicianText =>
+      'Do not treat this app as a substitute for professional advice when you have new pain, bleeding, fever, or sudden control changes.';
 }
