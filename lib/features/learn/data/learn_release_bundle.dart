@@ -46,6 +46,87 @@ extension LearnFoundationIdL10n on LearnFoundationId {
   }
 }
 
+enum LearnDosDontsPolarity { dos, dont }
+
+enum LearnDosDontsId {
+  releaseBetweenReps,
+  breatheNormally,
+  startShortSets,
+  stopOnFlare,
+  noPainThrough,
+  noCompensate,
+  noCatheterTrain,
+  noSubstituteClinician,
+}
+
+class LearnDosDontsEntry {
+  const LearnDosDontsEntry({
+    required this.id,
+    required this.polarity,
+  });
+
+  final LearnDosDontsId id;
+  final LearnDosDontsPolarity polarity;
+}
+
+const List<LearnDosDontsEntry> learnDosDontsItemsV1 = <LearnDosDontsEntry>[
+  LearnDosDontsEntry(
+    id: LearnDosDontsId.releaseBetweenReps,
+    polarity: LearnDosDontsPolarity.dos,
+  ),
+  LearnDosDontsEntry(
+    id: LearnDosDontsId.breatheNormally,
+    polarity: LearnDosDontsPolarity.dos,
+  ),
+  LearnDosDontsEntry(
+    id: LearnDosDontsId.startShortSets,
+    polarity: LearnDosDontsPolarity.dos,
+  ),
+  LearnDosDontsEntry(
+    id: LearnDosDontsId.stopOnFlare,
+    polarity: LearnDosDontsPolarity.dos,
+  ),
+  LearnDosDontsEntry(
+    id: LearnDosDontsId.noPainThrough,
+    polarity: LearnDosDontsPolarity.dont,
+  ),
+  LearnDosDontsEntry(
+    id: LearnDosDontsId.noCompensate,
+    polarity: LearnDosDontsPolarity.dont,
+  ),
+  LearnDosDontsEntry(
+    id: LearnDosDontsId.noCatheterTrain,
+    polarity: LearnDosDontsPolarity.dont,
+  ),
+  LearnDosDontsEntry(
+    id: LearnDosDontsId.noSubstituteClinician,
+    polarity: LearnDosDontsPolarity.dont,
+  ),
+];
+
+extension LearnDosDontsIdL10n on LearnDosDontsId {
+  String text(AppLocalizations l10n) {
+    switch (this) {
+      case LearnDosDontsId.releaseBetweenReps:
+        return l10n.learnDosDontsReleaseBetweenRepsText;
+      case LearnDosDontsId.breatheNormally:
+        return l10n.learnDosDontsBreatheNormallyText;
+      case LearnDosDontsId.startShortSets:
+        return l10n.learnDosDontsStartShortSetsText;
+      case LearnDosDontsId.stopOnFlare:
+        return l10n.learnDosDontsStopOnFlareText;
+      case LearnDosDontsId.noPainThrough:
+        return l10n.learnDosDontsNoPainThroughText;
+      case LearnDosDontsId.noCompensate:
+        return l10n.learnDosDontsNoCompensateText;
+      case LearnDosDontsId.noCatheterTrain:
+        return l10n.learnDosDontsNoCatheterTrainText;
+      case LearnDosDontsId.noSubstituteClinician:
+        return l10n.learnDosDontsNoSubstituteClinicianText;
+    }
+  }
+}
+
 extension AnatomyTrackL10n on AnatomyTrack {
   String label(AppLocalizations l10n) {
     switch (this) {

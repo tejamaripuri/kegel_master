@@ -228,4 +228,41 @@ void main() {
       );
     });
   });
+
+  group('LearnScreen dos and don\'ts section', () {
+    testWidgets('shows dos and don\'ts after anatomy with check and cross icons',
+        (WidgetTester tester) async {
+      await tester.pumpWidget(
+        await _learnHarness(
+          snapshot: OnboardingSnapshot(
+            onboardingComplete: true,
+            catheterActive: false,
+            profile: _profile(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Anatomy track'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('Dos and don\'ts'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dos and don\'ts'), findsOneWidget);
+      expect(
+        find.textContaining('Let the pelvic floor fully release'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Do not push through sharp'),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.check_circle_outline), findsNWidgets(4));
+      expect(find.byIcon(Icons.cancel_outlined), findsNWidgets(4));
+    });
+  });
 }
