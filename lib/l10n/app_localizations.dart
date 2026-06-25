@@ -165,6 +165,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bring questions about pain, new symptoms, or catheter changes to the clinician who knows your situation. This app supports habit building; it does not replace individualized guidance.'**
   String get learnFoundationCareTeamBody;
+
+  /// No description provided for @learnAnatomySectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Anatomy track'**
+  String get learnAnatomySectionTitle;
+
+  /// No description provided for @learnAnatomySectionIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the pelvic cues that fit your body. This is about structure and typical clinical patterns — not who you are.'**
+  String get learnAnatomySectionIntro;
+
+  /// No description provided for @learnAnatomyTrackMaleTypicalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Male-typical pelvic cues'**
+  String get learnAnatomyTrackMaleTypicalLabel;
+
+  /// No description provided for @learnAnatomyTrackFemaleTypicalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Female-typical pelvic cues'**
+  String get learnAnatomyTrackFemaleTypicalLabel;
+
+  /// No description provided for @learnAnatomyPromptSelectTrack.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the anatomy track that matches the pelvic cues you want to work with.'**
+  String get learnAnatomyPromptSelectTrack;
+
+  /// No description provided for @learnAnatomyMaleTypicalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'For male-typical pelvic anatomy, focus on lifting around the base of the penis and the area between the scrotum and anus. A gentle squeeze should feel like you are drawing upward without gripping the belly or thighs. Release fully between reps so the muscles do not stay braced.'**
+  String get learnAnatomyMaleTypicalBody;
+
+  /// No description provided for @learnAnatomyFemaleTypicalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'For female-typical pelvic anatomy, focus on a lift around the vaginal opening and the area toward the anus. Imagine picking up a marble without squeezing the buttocks or inner thighs. Let the muscles soften completely between reps.'**
+  String get learnAnatomyFemaleTypicalBody;
+
+  /// No description provided for @learnAnatomyPrivacyExpansionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional: tactile check'**
+  String get learnAnatomyPrivacyExpansionTitle;
+
+  /// No description provided for @learnAnatomyMaleTypicalPrivacyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'With clean hands, you can lightly press the perineum (between scrotum and anus) while you contract. You should feel a subtle lift, not a hard brace. Stop if you feel pain.'**
+  String get learnAnatomyMaleTypicalPrivacyBody;
+
+  /// No description provided for @learnAnatomyFemaleTypicalPrivacyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'With clean hands, you can place one finger at the vaginal opening while you contract. You should feel a gentle inward lift, not a painful squeeze. Stop if you feel pain.'**
+  String get learnAnatomyFemaleTypicalPrivacyBody;
 }
 
 class _AppLocalizationsDelegate

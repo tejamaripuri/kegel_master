@@ -52,4 +52,41 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get learnFoundationCareTeamBody =>
       'Bring questions about pain, new symptoms, or catheter changes to the clinician who knows your situation. This app supports habit building; it does not replace individualized guidance.';
+
+  @override
+  String get learnAnatomySectionTitle => 'Anatomy track';
+
+  @override
+  String get learnAnatomySectionIntro =>
+      'Choose the pelvic cues that fit your body. This is about structure and typical clinical patterns — not who you are.';
+
+  @override
+  String get learnAnatomyTrackMaleTypicalLabel => 'Male-typical pelvic cues';
+
+  @override
+  String get learnAnatomyTrackFemaleTypicalLabel =>
+      'Female-typical pelvic cues';
+
+  @override
+  String get learnAnatomyPromptSelectTrack =>
+      'Pick the anatomy track that matches the pelvic cues you want to work with.';
+
+  @override
+  String get learnAnatomyMaleTypicalBody =>
+      'For male-typical pelvic anatomy, focus on lifting around the base of the penis and the area between the scrotum and anus. A gentle squeeze should feel like you are drawing upward without gripping the belly or thighs. Release fully between reps so the muscles do not stay braced.';
+
+  @override
+  String get learnAnatomyFemaleTypicalBody =>
+      'For female-typical pelvic anatomy, focus on a lift around the vaginal opening and the area toward the anus. Imagine picking up a marble without squeezing the buttocks or inner thighs. Let the muscles soften completely between reps.';
+
+  @override
+  String get learnAnatomyPrivacyExpansionTitle => 'Optional: tactile check';
+
+  @override
+  String get learnAnatomyMaleTypicalPrivacyBody =>
+      'With clean hands, you can lightly press the perineum (between scrotum and anus) while you contract. You should feel a subtle lift, not a hard brace. Stop if you feel pain.';
+
+  @override
+  String get learnAnatomyFemaleTypicalPrivacyBody =>
+      'With clean hands, you can place one finger at the vaginal opening while you contract. You should feel a gentle inward lift, not a painful squeeze. Stop if you feel pain.';
 }
